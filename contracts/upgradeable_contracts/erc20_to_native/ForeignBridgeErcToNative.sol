@@ -67,10 +67,8 @@ contract ForeignBridgeErcToNative is ERC20Bridge, OtherSideBridgeStorage {
         require(_receiver != address(this), "Relayed to this address");
         require(_amount > 0, "Relayed zero funds");
         require(withinLimit(_amount), "Exceeds bridge daily limit");
-
         addTotalSpentPerDay(getCurrentDay(), _amount);
-
         erc20token().transferFrom(msg.sender, address(this), _amount);
-        emit UserRequestForAffirmation(_receiver, _amount);
+        _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(_receiver, _amount);
     }
 }

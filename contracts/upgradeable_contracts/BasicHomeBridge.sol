@@ -16,9 +16,9 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
-    event AffirmationCompleted(address recipient, uint256 value, bytes32 transactionHash);
+    event AffirmationCompleted(address recipient, uint256 value, bytes32 nonce);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
-    event SignedForAffirmation(address indexed signer, bytes32 transactionHash);
+    event SignedForAffirmation(address indexed signer, bytes32 nonce);
     event CollectedSignatures(
         address authorityResponsibleForRelay,
         bytes32 messageHash,
@@ -30,10 +30,10 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
      * Can be called only by a current bridge validator.
      * @param recipient tokens/coins of receiver address, where the assets should be unlocked/minted.
      * @param value amount of assets to unlock/mint.
-     * @param transactionHash reference event transaction hash on the Foreign side of the bridge.
+     * @param nonce reference nonce on the Foreign side of the bridge.
      */
-    function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
-        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
+    function executeAffirmation(address recipient, uint256 value, bytes32 nonce) external onlyValidator {
+        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, nonce));
         if (withinExecutionLimit(value)) {
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
             // Duplicated affirmations
@@ -47,19 +47,50 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             setNumAffirmationsSigned(hashMsg, signed);
 
-            emit SignedForAffirmation(msg.sender, transactionHash);
+            emit SignedForAffirmation(msg.sender, nonce);
 
-            if (signed >= requiredSignatures()) {
+            if (signed >= requiredSignatures() && !HASHI_IS_ENABLED) {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
                 if (value > 0) {
-                    require(onExecuteAffirmation(recipient, value, transactionHash, hashMsg));
+                    require(onExecuteAffirmation(recipient, value, nonce, hashMsg));
                 }
-                emit AffirmationCompleted(recipient, value, transactionHash);
+                emit AffirmationCompleted(recipient, value, nonce);
             }
         } else {
-            onFailedAffirmation(recipient, value, transactionHash, hashMsg);
+            onFailedAffirmation(recipient, value, nonce, hashMsg);
+        }
+    }
+
+    function onMessage(uint256 chainId, uint256, address sender, bytes message) external returns (bytes) {
+        require(HASHI_IS_ENABLED);
+        require(msg.sender == yaru());
+        require(chainId == hashiTargetChainId());
+        require(sender == targetAmb());
+
+        bytes32 hashMsg = keccak256(message);
+        address recipient;
+        uint256 value;
+        bytes32 nonce;
+        bytes memory localMessage = message;
+        assembly {
+            recipient := mload(add(localMessage, 0x14)) // 20 bytes
+            value := mload(add(localMessage, 0x34)) // 20 + 32 bytes
+            nonce := mload(add(localMessage, 0x54)) // 20 + 32 + 32 bytes
+        }
+
+        if (withinExecutionLimit(value)) {
+            uint256 signed = numAffirmationsSigned(hashMsg);
+            require(signed >= requiredSignatures());
+            require(!isAlreadyProcessed(signed));
+            setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
+            if (value > 0) {
+                require(onExecuteAffirmation(recipient, value, nonce, hashMsg));
+            }
+            emit AffirmationCompleted(recipient, value, nonce);
+        } else {
+            onFailedAffirmation(recipient, value, nonce, hashMsg);
         }
     }
 
