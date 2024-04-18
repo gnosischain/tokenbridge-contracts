@@ -40,6 +40,24 @@ library Message {
         }
     }
 
+    // layout of message :: bytes:
+    // offset  0: 32 bytes :: uint256 - message length
+    // offset 32: 20 bytes :: address - recipient address
+    // offset 52: 32 bytes :: uint256 - value
+    // offset 84: 32 bytes :: bytes32 - nonce
+    function parseHashiMessage(bytes message)
+        internal
+        pure
+        returns (address recipient, uint256 amount, bytes32 nonce)
+    {
+        require(message.length == 84);
+        assembly {
+            recipient := mload(add(message, 20))
+            amount := mload(add(message, 52))
+            nonce := mload(add(message, 84))
+        }
+    }
+
     function isMessageValid(bytes _msg) internal pure returns (bool) {
         return _msg.length == requiredMessageLength();
     }

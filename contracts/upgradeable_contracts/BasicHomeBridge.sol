@@ -32,7 +32,8 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
      * @param value amount of assets to unlock/mint.
      * @param nonce reference nonce on the Foreign side of the bridge.
      */
-    function executeAffirmation(address recipient, uint256 value, bytes32 nonce) external onlyValidator {
+    function executeAffirmation(address recipient, uint256 value, bytes32 nonce) external {
+        _onlyValidator();
         bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, nonce));
         if (withinExecutionLimit(value)) {
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
@@ -64,21 +65,13 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     function onMessage(uint256 chainId, uint256, address sender, bytes message) external returns (bytes) {
-        require(HASHI_IS_ENABLED);
-        require(msg.sender == yaru());
-        require(chainId == hashiTargetChainId());
-        require(sender == targetAmb());
+        require(HASHI_IS_ENABLED && msg.sender == yaru() && chainId == hashiTargetChainId() && sender == targetAmb());
 
         bytes32 hashMsg = keccak256(message);
         address recipient;
         uint256 value;
         bytes32 nonce;
-        bytes memory localMessage = message;
-        assembly {
-            recipient := mload(add(localMessage, 0x14)) // 20 bytes
-            value := mload(add(localMessage, 0x34)) // 20 + 32 bytes
-            nonce := mload(add(localMessage, 0x54)) // 20 + 32 + 32 bytes
-        }
+        (recipient, value, nonce) = Message.parseHashiMessage(message);
 
         if (withinExecutionLimit(value)) {
             uint256 signed = numAffirmationsSigned(hashMsg);
@@ -94,7 +87,8 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         }
     }
 
-    function submitSignature(bytes signature, bytes message) external onlyValidator {
+    function submitSignature(bytes signature, bytes message) external {
+        _onlyValidator();
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
         require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message, false));
@@ -202,9 +196,5 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
     function numMessagesSigned(bytes32 _message) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
-    }
-
-    function requiredMessageLength() public pure returns (uint256) {
-        return Message.requiredMessageLength();
     }
 }
