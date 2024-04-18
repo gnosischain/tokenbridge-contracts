@@ -30,7 +30,7 @@ contract BasicBridge is
     bytes32 internal constant N_HASHI_REPORTERS = 0x90bd2a3289afeef413446382a0b9b2a4718473419286a503c22b5b61e9a5610b; // keccak256(abi.encodePacked("nHashiReporters"))
     bytes32 internal constant YAHO = 0xb947d41ce6141eb4dc972fcad3b49fe0eb8d5f59730728c86b8f6e1427912f0e; // keccak256(abi.encodePacked("yaho"))
     bytes32 internal constant YARU = 0x524607f5322f856f1415d60956f8220a13a3abe3281979fdb843027035724c76; // keccak256(abi.encodePacked("yaru"))
-    bytes32 internal constant TARGET_AMB = 0x951fac2f6ac1586d0b31ff29b0f80314d0e14f9d116d97db8786bdb86e548285; // keccak256(abi.encodePacked("targetAmb"))
+    bytes32 internal constant HASHI_TARGET_ADDRESS = 0x70bc570ef0635df82f171427ad68afc63c0c8b7ec49d4ca0acc4591acb9f2111; // keccak256(abi.encodePacked("hashiTargetAddress"))
     bytes32 internal constant HASHI_TARGET_CHAIN_ID = 0xa6c3b41d4586b3220aecef5a5303a259a4af00db10885d9da4747b9352277114; // keccak256(abi.encodePacked("hashiTargetChainId"))
     bytes32 internal constant HASHI_THRESHOLD = 0xcee9971420de3ced933f6dc33d3cde97aa59ee5a4b2ac467f10f498085c856df; // keccak256(abi.encodePacked("hashiThreshold"))
     bool public constant HASHI_IS_ENABLED = true;
@@ -111,12 +111,12 @@ contract BasicBridge is
         addressStorage[YARU] = yaru_;
     }
 
-    function targetAmb() public view returns (address) {
-        return addressStorage[TARGET_AMB];
+    function hashiTargetAddress() public view returns (address) {
+        return addressStorage[HASHI_TARGET_ADDRESS];
     }
 
-    function setTargetAmb(address targetAmb_) external onlyOwner {
-        addressStorage[TARGET_AMB] = targetAmb_;
+    function setHashiTargetAddress(address hashiTargetAddress_) external onlyOwner {
+        addressStorage[HASHI_TARGET_ADDRESS] = hashiTargetAddress_;
     }
 
     function hashiTargetChainId() public view returns (uint256) {
@@ -157,7 +157,7 @@ contract BasicBridge is
             IYaho(yaho()).dispatchMessage(
                 hashiTargetChainId(),
                 hashiThreshold(),
-                targetAmb(),
+                hashiTargetAddress(),
                 data,
                 reporters,
                 adapters

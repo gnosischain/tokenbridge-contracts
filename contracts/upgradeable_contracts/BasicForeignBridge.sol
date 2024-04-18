@@ -44,7 +44,12 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
     }
 
     function onMessage(uint256 chainId, uint256, address sender, bytes message) external returns (bytes) {
-        require(HASHI_IS_ENABLED && msg.sender == yaru() && chainId == hashiTargetChainId() && sender == targetAmb());
+        require(
+            HASHI_IS_ENABLED &&
+                msg.sender == yaru() &&
+                chainId == hashiTargetChainId() &&
+                sender == hashiTargetAddress()
+        );
         // NOTE: message contains recipient, amount, nonce
         bytes32 msgId = keccak256(message);
         _setMessageToExecute(msgId, true);
