@@ -24,18 +24,42 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
 
         address recipient;
         uint256 amount;
-        bytes32 txHash;
+        bytes32 nonce;
         address contractAddress;
-        (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
+        (recipient, amount, nonce, contractAddress) = Message.parseMessage(message);
         if (withinExecutionLimit(amount)) {
             require(contractAddress == address(this));
-            require(!relayedMessages(txHash));
-            setRelayedMessages(txHash, true);
-            require(onExecuteMessage(recipient, amount, txHash));
-            emit RelayedMessage(recipient, amount, txHash);
+            require(!relayedMessages(nonce));
+            setRelayedMessages(nonce, true);
+
+            bytes32 msgId = keccak256(abi.encodePacked(recipient, amount, nonce));
+            if (HASHI_IS_ENABLED) require(canBeExecuted(msgId));
+            _setMessageToExecute(msgId, false);
+
+            require(onExecuteMessage(recipient, amount, nonce));
+            emit RelayedMessage(recipient, amount, nonce);
         } else {
-            onFailedMessage(recipient, amount, txHash);
+            onFailedMessage(recipient, amount, nonce);
         }
+    }
+
+    function onMessage(uint256 chainId, uint256, address sender, bytes message) external returns (bytes) {
+        require(HASHI_IS_ENABLED);
+        require(msg.sender == yaru());
+        require(chainId == hashiTargetChainId());
+        require(sender == targetAmb());
+        // NOTE: message contains recipient, amount, nonce
+        bytes32 msgId = keccak256(message);
+        _setMessageToExecute(msgId, true);
+    }
+
+    function _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(address _receiver, uint256 _amount)
+        internal
+    {
+        uint256 currentNonce = nonce();
+        emit UserRequestForAffirmation(_receiver, _amount, bytes32(currentNonce));
+        _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
+        setNonce(currentNonce + 1);
     }
 
     /**
@@ -45,6 +69,14 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
     function _setGasPrice(uint256 _gasPrice) internal {
         require(_gasPrice > 0);
         super._setGasPrice(_gasPrice);
+    }
+
+    function canBeExecuted(bytes32 msgId) public view returns (bool) {
+        return boolStorage[keccak256(abi.encodePacked("messageToExecute", msgId))];
+    }
+
+    function _setMessageToExecute(bytes32 msgId, bool status) internal {
+        boolStorage[keccak256(abi.encodePacked("messageToExecute", msgId))] = status;
     }
 
     /* solcov ignore next */

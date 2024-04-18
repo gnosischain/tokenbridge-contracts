@@ -45,7 +45,8 @@ contract HomeBridgeErcToNative is
         }
         setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
-        emit UserRequestForSignature(_receiver, valueToTransfer);
+
+        _emitUserRequestForSignatureMaybeRelayDataWithHashiAndIncreaseNonce(_receiver, valueToTransfer);
     }
 
     function relayTokens(address _receiver) external payable {

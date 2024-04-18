@@ -15,7 +15,7 @@ import "./BasicTokenBridge.sol";
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;
 
-    event UserRequestForSignature(address recipient, uint256 value);
+    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce);
     event AffirmationCompleted(address recipient, uint256 value, bytes32 nonce);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event SignedForAffirmation(address indexed signer, bytes32 nonce);
@@ -127,6 +127,15 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             onSignaturesCollected(message);
         }
+    }
+
+    function _emitUserRequestForSignatureMaybeRelayDataWithHashiAndIncreaseNonce(address _receiver, uint256 _amount)
+        internal
+    {
+        uint256 currentNonce = nonce();
+        emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce));
+        _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
+        setNonce(currentNonce + 1);
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {

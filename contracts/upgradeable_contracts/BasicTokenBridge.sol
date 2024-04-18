@@ -16,6 +16,7 @@ contract BasicTokenBridge is EternalStorage, Ownable, DecimalShiftBridge {
     bytes32 internal constant DAILY_LIMIT = 0x4a6a899679f26b73530d8cf1001e83b6f7702e04b6fdb98f3c62dc7e47e041a5; // keccak256(abi.encodePacked("dailyLimit"))
     bytes32 internal constant EXECUTION_MAX_PER_TX = 0xc0ed44c192c86d1cc1ba51340b032c2766b4a2b0041031de13c46dd7104888d5; // keccak256(abi.encodePacked("executionMaxPerTx"))
     bytes32 internal constant EXECUTION_DAILY_LIMIT = 0x21dbcab260e413c20dc13c28b7db95e2b423d1135f42bb8b7d5214a92270d237; // keccak256(abi.encodePacked("executionDailyLimit"))
+    bytes32 internal constant TOKEN_BRIDGE_NONCE = 0x8fe4c9f18420598a0f0a5c996b969714f39cc770f1900e60d2697139e137749b; // keccak256(abi.encodePacked("tokenBridgeNonce"))
 
     function totalSpentPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
@@ -127,5 +128,13 @@ contract BasicTokenBridge is EternalStorage, Ownable, DecimalShiftBridge {
         uintStorage[EXECUTION_MAX_PER_TX] = _limits[1];
 
         emit ExecutionDailyLimitChanged(_limits[0]);
+    }
+
+    function nonce() public view returns (uint256) {
+        return uintStorage[TOKEN_BRIDGE_NONCE];
+    }
+
+    function setNonce(uint256 nonce) internal {
+        uintStorage[TOKEN_BRIDGE_NONCE] = nonce;
     }
 }

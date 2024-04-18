@@ -29,13 +29,13 @@ library Message {
     function parseMessage(bytes message)
         internal
         pure
-        returns (address recipient, uint256 amount, bytes32 txHash, address contractAddress)
+        returns (address recipient, uint256 amount, bytes32 nonce, address contractAddress)
     {
         require(isMessageValid(message));
         assembly {
             recipient := mload(add(message, 20))
             amount := mload(add(message, 52))
-            txHash := mload(add(message, 84))
+            nonce := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
         }
     }
