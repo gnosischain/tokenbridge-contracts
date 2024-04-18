@@ -59,11 +59,7 @@ library Message {
     }
 
     function isMessageValid(bytes _msg) internal pure returns (bool) {
-        return _msg.length == requiredMessageLength();
-    }
-
-    function requiredMessageLength() internal pure returns (uint256) {
-        return 104;
+        return _msg.length == 104;
     }
 
     function recoverAddressFromSignedMessage(bytes signature, bytes message, bool isAMBMessage)
