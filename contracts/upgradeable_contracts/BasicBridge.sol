@@ -56,7 +56,7 @@ contract BasicBridge is
         return uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
     }
 
-    function hashiManager() public view returns(IHashiManager) {
+    function hashiManager() public view returns (IHashiManager) {
         return IHashiManager(addressStorage[HASHI_MANAGER]);
     }
 

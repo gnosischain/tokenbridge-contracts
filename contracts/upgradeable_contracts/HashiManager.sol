@@ -13,6 +13,12 @@ contract HashiManager is InitializableBridge, Ownable {
     bytes32 internal constant HASHI_TARGET_CHAIN_ID = 0xa6c3b41d4586b3220aecef5a5303a259a4af00db10885d9da4747b9352277114; // keccak256(abi.encodePacked("hashiTargetChainId"))
     bytes32 internal constant HASHI_THRESHOLD = 0xcee9971420de3ced933f6dc33d3cde97aa59ee5a4b2ac467f10f498085c856df; // keccak256(abi.encodePacked("hashiThreshold"))
 
+    function initialize(address _owner) external onlyRelevantSender returns (bool) {
+        require(!isInitialized());
+        _setOwner(_owner);
+        return isInitialized();
+    }
+
     function hashiAdapters() external view returns (address[]) {
         uint256 nAdapters = uintStorage[N_HASHI_ADAPTERS];
         address[] memory adapters = new address[](nAdapters);
