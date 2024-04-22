@@ -67,9 +67,9 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     function onMessage(uint256 chainId, uint256, address sender, bytes message) external returns (bytes) {
         require(
             HASHI_IS_ENABLED &&
-                msg.sender == yaru() &&
-                chainId == hashiTargetChainId() &&
-                sender == hashiTargetAddress()
+                msg.sender == hashiManager().yaru() &&
+                chainId == hashiManager().hashiTargetChainId() &&
+                sender == hashiManager().hashiTargetAddress()
         );
 
         bytes32 hashMsg = keccak256(message);
