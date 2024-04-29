@@ -16,31 +16,24 @@ contract HashiManager is InitializableBridge, Ownable {
     function initialize(address _owner) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         _setOwner(_owner);
+        setInitialize();
         return isInitialized();
     }
 
     function hashiAdapters() external view returns (address[]) {
-        uint256 nAdapters = uintStorage[N_HASHI_ADAPTERS];
-        address[] memory adapters = new address[](nAdapters);
-        for (uint256 i = 0; i < nAdapters; i++)
-            adapters[i] = addressStorage[keccak256(abi.encodePacked("hashiAdapters", i))];
-        return adapters;
+        return _getArray(N_HASHI_ADAPTERS, "hashiAdapters");
     }
 
     function setHashiAdapters(address[] _adapters) external onlyOwner {
-        _resetAdaptersOrReporters(N_HASHI_ADAPTERS, "hashiAdapters", _adapters);
+        _setArray(N_HASHI_ADAPTERS, "hashiAdapters", _adapters);
     }
 
     function hashiReporters() external view returns (address[]) {
-        uint256 nReporters = uintStorage[N_HASHI_REPORTERS];
-        address[] memory reporters = new address[](nReporters);
-        for (uint256 i = 0; i < nReporters; i++)
-            reporters[i] = addressStorage[keccak256(abi.encodePacked("hashiReporters", i))];
-        return reporters;
+        return _getArray(N_HASHI_REPORTERS, "hashiReporters");
     }
 
     function setHashiReporters(address[] _reporters) external onlyOwner {
-        _resetAdaptersOrReporters(N_HASHI_REPORTERS, "hashiReporters", _reporters);
+        _setArray(N_HASHI_REPORTERS, "hashiReporters", _reporters);
     }
 
     function yaho() external view returns (address) {
@@ -83,7 +76,14 @@ contract HashiManager is InitializableBridge, Ownable {
         uintStorage[HASHI_THRESHOLD] = threshold;
     }
 
-    function _resetAdaptersOrReporters(bytes32 keyLength, bytes32 key, address[] values) internal {
+    function _getArray(bytes32 keyLength, bytes32 key) internal returns (address[]) {
+        uint256 n = uintStorage[keyLength];
+        address[] memory values = new address[](n);
+        for (uint256 i = 0; i < n; i++) values[i] = addressStorage[keccak256(abi.encodePacked(key, i))];
+        return values;
+    }
+
+    function _setArray(bytes32 keyLength, bytes32 key, address[] values) internal {
         uint256 n = uintStorage[keyLength];
         for (uint256 i = 0; i < n; i++) delete addressStorage[keccak256(abi.encodePacked(key, i))];
         uintStorage[keyLength] = values.length;
