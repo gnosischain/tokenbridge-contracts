@@ -45,11 +45,7 @@ library Message {
     // offset 32: 20 bytes :: address - recipient address
     // offset 52: 32 bytes :: uint256 - value
     // offset 84: 32 bytes :: bytes32 - nonce
-    function parseHashiMessage(bytes message)
-        internal
-        pure
-        returns (address recipient, uint256 amount, bytes32 nonce)
-    {
+    function parseHashiMessage(bytes message) internal pure returns (address recipient, uint256 amount, bytes32 nonce) {
         require(message.length == 84);
         assembly {
             recipient := mload(add(message, 20))
