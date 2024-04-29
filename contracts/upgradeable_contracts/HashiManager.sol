@@ -76,7 +76,7 @@ contract HashiManager is InitializableBridge, Ownable {
         uintStorage[HASHI_THRESHOLD] = threshold;
     }
 
-    function _getArray(bytes32 keyLength, bytes32 key) internal returns (address[]) {
+    function _getArray(bytes32 keyLength, bytes32 key) internal view returns (address[]) {
         uint256 n = uintStorage[keyLength];
         address[] memory values = new address[](n);
         for (uint256 i = 0; i < n; i++) values[i] = addressStorage[keccak256(abi.encodePacked(key, i))];
