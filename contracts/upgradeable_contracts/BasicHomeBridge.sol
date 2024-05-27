@@ -50,7 +50,10 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             emit SignedForAffirmation(msg.sender, nonce);
 
-            if (signed >= requiredSignatures() && !HASHI_IS_ENABLED) {
+            // NOTE: If Hashi is optional, an affirmation can be executed even if it hasn't been approved by Hashi
+            if (HASHI_IS_ENABLED && !HASHI_IS_OPTIONAL) require(isApprovedByHashi(hashMsg));
+
+            if (signed >= requiredSignatures()) {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
@@ -73,23 +76,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         );
 
         bytes32 hashMsg = keccak256(message);
-        address recipient;
-        uint256 value;
-        bytes32 nonce;
-        (recipient, value, nonce) = Message.parseHashiMessage(message);
-
-        if (withinExecutionLimit(value)) {
-            uint256 signed = numAffirmationsSigned(hashMsg);
-            require(signed >= requiredSignatures());
-            require(!isAlreadyProcessed(signed));
-            setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            if (value > 0) {
-                require(onExecuteAffirmation(recipient, value, nonce, hashMsg));
-            }
-            emit AffirmationCompleted(recipient, value, nonce);
-        } else {
-            onFailedAffirmation(recipient, value, nonce, hashMsg);
-        }
+        _setHashiApprovalForMessage(hashMsg, true);
     }
 
     function submitSignature(bytes signature, bytes message) external {
