@@ -33,7 +33,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
             setRelayedMessages(nonce, true);
 
             bytes32 msgId = keccak256(abi.encodePacked(recipient, amount, nonce));
-            if (HASHI_IS_ENABLED && !HASHI_IS_OPTIONAL) require(isApprovedByHashi(msgId));
+            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(msgId));
 
             require(onExecuteMessage(recipient, amount, nonce));
             emit RelayedMessage(recipient, amount, nonce);

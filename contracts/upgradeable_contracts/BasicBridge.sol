@@ -29,7 +29,7 @@ contract BasicBridge is
     bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = 0x916daedf6915000ff68ced2f0b6773fe6f2582237f92c3c95bb4d79407230071; // keccak256(abi.encodePacked("requiredBlockConfirmations"))
     bytes32 internal constant HASHI_MANAGER = 0x660d8ed18395a9aa930e304e0bb5e6e51957af1fa215b11db48bfda3dd38d511; // keccak256(abi.encodePacked("hashiManager"))
     bool public constant HASHI_IS_ENABLED = true;
-    bool public constant HASHI_IS_OPTIONAL = true;
+    bool public constant HASHI_IS_MANDATORY = false;
 
     function isApprovedByHashi(bytes32 msgId) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", msgId))];
