@@ -50,7 +50,6 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             emit SignedForAffirmation(msg.sender, nonce);
 
-            // NOTE: If Hashi is optional, an affirmation can be executed even if it hasn't been approved by Hashi
             if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
 
             if (signed >= requiredSignatures()) {
