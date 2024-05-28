@@ -84,18 +84,18 @@ contract BasicBridge is
 
     function _maybeRelayDataWithHashi(bytes data) internal {
         if (HASHI_IS_ENABLED) {
-            address[] memory hReporters = hashiManager().hashiReporters();
+            address[] memory hReporters = hashiManager().reporters();
             IReporter[] memory reporters = new IReporter[](hReporters.length);
             for (uint256 i = 0; i < hReporters.length; i++) reporters[i] = IReporter(hReporters[i]);
 
-            address[] memory hAdapters = hashiManager().hashiAdapters();
+            address[] memory hAdapters = hashiManager().adapters();
             IAdapter[] memory adapters = new IAdapter[](hAdapters.length);
             for (uint256 j = 0; j < hAdapters.length; j++) adapters[j] = IAdapter(hAdapters[j]);
 
             IYaho(hashiManager().yaho()).dispatchMessage(
-                hashiManager().hashiTargetChainId(),
-                hashiManager().hashiThreshold(),
-                hashiManager().hashiTargetAddress(),
+                hashiManager().targetChainId(),
+                hashiManager().threshold(),
+                hashiManager().targetAddress(),
                 data,
                 reporters,
                 adapters

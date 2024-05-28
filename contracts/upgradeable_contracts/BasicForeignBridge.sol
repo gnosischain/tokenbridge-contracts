@@ -46,8 +46,8 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         require(
             HASHI_IS_ENABLED &&
                 msg.sender == hashiManager().yaru() &&
-                chainId == hashiManager().hashiTargetChainId() &&
-                sender == hashiManager().hashiTargetAddress()
+                chainId == hashiManager().targetChainId() &&
+                sender == hashiManager().targetAddress()
         );
         // NOTE: message contains recipient, amount, nonce
         bytes32 msgId = keccak256(message);

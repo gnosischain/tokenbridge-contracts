@@ -70,8 +70,8 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         require(
             HASHI_IS_ENABLED &&
                 msg.sender == hashiManager().yaru() &&
-                chainId == hashiManager().hashiTargetChainId() &&
-                sender == hashiManager().hashiTargetAddress()
+                chainId == hashiManager().targetChainId() &&
+                sender == hashiManager().targetAddress()
         );
 
         bytes32 hashMsg = keccak256(message);

@@ -1,17 +1,17 @@
 pragma solidity 0.4.24;
 
 interface IHashiManager {
-    function hashiAdapters() external view returns (address[]);
+    function adapters() external view returns (address[]);
 
-    function hashiReporters() external view returns (address[]);
+    function reporters() external view returns (address[]);
 
     function yaho() external view returns (address);
 
     function yaru() external view returns (address);
 
-    function hashiTargetAddress() external view returns (address);
+    function targetAddress() external view returns (address);
 
-    function hashiTargetChainId() external view returns (uint256);
+    function targetChainId() external view returns (uint256);
 
-    function hashiThreshold() external view returns (uint256);
+    function threshold() external view returns (uint256);
 }
