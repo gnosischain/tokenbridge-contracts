@@ -33,8 +33,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
             setRelayedMessages(nonce, true);
 
             bytes32 msgId = keccak256(abi.encodePacked(recipient, amount, nonce));
-            if (HASHI_IS_ENABLED) require(canBeExecuted(msgId));
-            _setMessageToExecute(msgId, false);
+            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(msgId));
 
             require(onExecuteMessage(recipient, amount, nonce));
             emit RelayedMessage(recipient, amount, nonce);
@@ -52,7 +51,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         );
         // NOTE: message contains recipient, amount, nonce
         bytes32 msgId = keccak256(message);
-        _setMessageToExecute(msgId, true);
+        _setHashiApprovalForMessage(msgId, true);
     }
 
     function _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(address _receiver, uint256 _amount)
