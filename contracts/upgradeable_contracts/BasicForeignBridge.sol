@@ -72,14 +72,6 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         super._setGasPrice(_gasPrice);
     }
 
-    function canBeExecuted(bytes32 msgId) public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("messageToExecute", msgId))];
-    }
-
-    function _setMessageToExecute(bytes32 msgId, bool status) internal {
-        boolStorage[keccak256(abi.encodePacked("messageToExecute", msgId))] = status;
-    }
-
     /* solcov ignore next */
     function onExecuteMessage(address, uint256, bytes32) internal returns (bool);
 
