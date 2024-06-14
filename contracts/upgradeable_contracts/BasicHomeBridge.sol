@@ -67,7 +67,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     function onMessage(
-        uint256 messageId,
+        uint256, /*messageId*/
         uint256 chainId,
         address sender,
         uint256 threshold,

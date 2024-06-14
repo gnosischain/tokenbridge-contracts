@@ -43,7 +43,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
     }
 
     function onMessage(
-        uint256 messageId,
+        uint256, /*messageId*/
         uint256 chainId,
         address sender,
         uint256 threshold,
