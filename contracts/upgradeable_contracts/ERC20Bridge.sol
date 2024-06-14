@@ -3,9 +3,6 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./BasicForeignBridge.sol";
-import "../interfaces/hashi/IYaho.sol";
-import "../interfaces/hashi/IAdapter.sol";
-import "../interfaces/hashi/IReporter.sol";
 
 contract ERC20Bridge is BasicForeignBridge {
     bytes32 internal constant ERC20_TOKEN = 0x15d63b18dbc21bf4438b7972d80076747e1d93c4f87552fe498c90cbde51665e; // keccak256(abi.encodePacked("erc20token"))

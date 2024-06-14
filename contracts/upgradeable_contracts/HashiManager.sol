@@ -12,6 +12,8 @@ contract HashiManager is InitializableBridge, Ownable {
     bytes32 internal constant TARGET_ADDRESS = 0x2f1696ba9bd43014bc580768c9270c32ad765cbf97d2a2ba5e81ab9f1ee90561; // keccak256(abi.encodePacked("targetAddress"))
     bytes32 internal constant TARGET_CHAIN_ID = 0xbd2b577e24554caf96874c1f333079c108fe5afbd441f36a76920df41d10820c; // keccak256(abi.encodePacked("targetChainId"))
     bytes32 internal constant THRESHOLD = 0xd46c2b20c7303c2e50535d224276492e8a1eda2a3d7398e0bea254640c1154e7; // keccak256(abi.encodePacked("threshold"))
+    bytes32 internal constant EXPECTED_THRESHOLD = 0x8d22a2c372a80e72edabc4af18641f1c8144f8c3c74dce591bace2af2a167b88; // keccak256(abi.encodePacked("expectedThreshold"))
+    bytes32 internal constant EXPECTED_ADAPTERS_HASH = 0x21aa67cae9293b939ada82eb9133293e592da66aa847a5596523bd6d2bf2529b; // keccak256(abi.encodePacked("expectedAdapters"))
 
     function initialize(address _owner) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
@@ -35,6 +37,22 @@ contract HashiManager is InitializableBridge, Ownable {
 
     function reporters() external view returns (address[]) {
         return _getArray(N_REPORTERS, "reporters");
+    }
+
+    function expectedAdaptersHash() external view returns (bytes32) {
+        return bytes32(uintStorage[EXPECTED_ADAPTERS_HASH]);
+    }
+
+    function setExpectedAdaptersHash(address[] adapters_) external onlyOwner {
+        uintStorage[EXPECTED_ADAPTERS_HASH] = uint256(keccak256(abi.encodePacked(adapters_)));
+    }
+
+    function expectedThreshold() external view returns (uint256) {
+        return uintStorage[EXPECTED_THRESHOLD];
+    }
+
+    function setExpectedThreshold(uint256 expectedThreshold_) external onlyOwner {
+        uintStorage[EXPECTED_THRESHOLD] = expectedThreshold_;
     }
 
     function yaho() external view returns (address) {
