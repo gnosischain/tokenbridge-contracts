@@ -119,9 +119,9 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         internal
     {
         uint256 currentNonce = nonce();
+        setNonce(currentNonce + 1);
         emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce));
         _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
-        setNonce(currentNonce + 1);
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
