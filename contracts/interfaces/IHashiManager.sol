@@ -5,6 +5,10 @@ interface IHashiManager {
 
     function reporters() external view returns (address[]);
 
+    function expectedAdaptersHash() external view returns (bytes32);
+
+    function expectedThreshold() external view returns (uint256);
+
     function yaho() external view returns (address);
 
     function yaru() external view returns (address);

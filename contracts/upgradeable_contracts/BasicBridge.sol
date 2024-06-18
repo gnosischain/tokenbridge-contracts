@@ -9,8 +9,6 @@ import "./Claimable.sol";
 import "./VersionableBridge.sol";
 import "./DecimalShiftBridge.sol";
 import "../interfaces/hashi/IYaho.sol";
-import "../interfaces/hashi/IAdapter.sol";
-import "../interfaces/hashi/IReporter.sol";
 import "../interfaces/IHashiManager.sol";
 
 contract BasicBridge is
@@ -84,22 +82,27 @@ contract BasicBridge is
 
     function _maybeRelayDataWithHashi(bytes data) internal {
         if (HASHI_IS_ENABLED) {
-            address[] memory hReporters = hashiManager().reporters();
-            IReporter[] memory reporters = new IReporter[](hReporters.length);
-            for (uint256 i = 0; i < hReporters.length; i++) reporters[i] = IReporter(hReporters[i]);
-
-            address[] memory hAdapters = hashiManager().adapters();
-            IAdapter[] memory adapters = new IAdapter[](hAdapters.length);
-            for (uint256 j = 0; j < hAdapters.length; j++) adapters[j] = IAdapter(hAdapters[j]);
-
-            IYaho(hashiManager().yaho()).dispatchMessage(
-                hashiManager().targetChainId(),
-                hashiManager().threshold(),
-                hashiManager().targetAddress(),
+            IHashiManager manager = hashiManager();
+            IYaho(manager.yaho()).dispatchMessage(
+                manager.targetChainId(),
+                manager.threshold(),
+                manager.targetAddress(),
                 data,
-                reporters,
-                adapters
+                manager.reporters(),
+                manager.adapters()
             );
         }
+    }
+
+    function _validateHashiMessage(uint256 chainId, uint256 threshold, address sender, address[] adapters) internal {
+        IHashiManager manager = hashiManager();
+        require(
+            HASHI_IS_ENABLED &&
+                msg.sender == manager.yaru() &&
+                chainId == manager.targetChainId() &&
+                sender == manager.targetAddress() &&
+                threshold == manager.expectedThreshold() &&
+                keccak256(abi.encodePacked(adapters)) == manager.expectedAdaptersHash()
+        );
     }
 }
