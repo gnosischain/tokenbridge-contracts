@@ -80,7 +80,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     function onExecuteMessage(
         address _recipient,
         uint256 _amount,
-        bytes32 /*_txHash*/
+        bytes32 /*_nonce*/
     ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
