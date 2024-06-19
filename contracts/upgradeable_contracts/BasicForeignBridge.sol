@@ -55,13 +55,13 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         _setHashiApprovalForMessage(msgId, true);
     }
 
-    function _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(address _receiver, uint256 _amount)
+    function _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(address _receiver, uint256 _amount)
         internal
     {
         uint256 currentNonce = nonce();
+        setNonce(currentNonce + 1);
         emit UserRequestForAffirmation(_receiver, _amount, bytes32(currentNonce));
         _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
-        setNonce(currentNonce + 1);
     }
 
     /**

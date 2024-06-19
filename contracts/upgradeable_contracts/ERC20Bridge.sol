@@ -23,7 +23,7 @@ contract ERC20Bridge is BasicForeignBridge {
         require(withinLimit(_amount), "Relayed above limit");
         addTotalSpentPerDay(getCurrentDay(), _amount);
         erc20token().transferFrom(msg.sender, address(this), _amount);
-        _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(_receiver, _amount);
+        _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(_receiver, _amount);
     }
 
     function _relayInterest(address _receiver, uint256 _amount) internal {
@@ -32,6 +32,6 @@ contract ERC20Bridge is BasicForeignBridge {
         require(_amount > 0, "Relayed zero tokens");
         require(withinLimit(_amount), "Relayed above limit");
         addTotalSpentPerDay(getCurrentDay(), _amount);
-        _emitUserRequestForAffirmationMaybeRelayDataWithHashiAndIncreaseNonce(_receiver, _amount);
+        _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(_receiver, _amount);
     }
 }
