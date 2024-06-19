@@ -40,7 +40,7 @@ contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upg
                 uint256 fee = calculateFee(valueToUnlock, false, feeManager, HOME_FEE);
                 eventValue = valueToUnlock.sub(fee);
             }
-            _emitUserRequestForSignatureMaybeRelayDataWithHashiAndIncreaseNonce(recipient, eventValue);
+            _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(recipient, eventValue);
         }
     }
 

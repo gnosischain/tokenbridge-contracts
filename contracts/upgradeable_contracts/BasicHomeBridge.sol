@@ -115,7 +115,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         }
     }
 
-    function _emitUserRequestForSignatureMaybeRelayDataWithHashiAndIncreaseNonce(address _receiver, uint256 _amount)
+    function _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(address _receiver, uint256 _amount)
         internal
     {
         uint256 currentNonce = nonce();
