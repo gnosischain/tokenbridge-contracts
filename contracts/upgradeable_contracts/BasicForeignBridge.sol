@@ -52,6 +52,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
     ) external returns (bytes) {
         _validateHashiMessage(chainId, threshold, sender, adapters);
         bytes32 msgId = keccak256(data);
+        require(!isApprovedByHashi(msgId));
         _setHashiApprovalForMessage(msgId, true);
     }
 
@@ -61,7 +62,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         uint256 currentNonce = nonce();
         setNonce(currentNonce + 1);
         emit UserRequestForAffirmation(_receiver, _amount, bytes32(currentNonce));
-        _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
+        _maybeSendDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
     }
 
     /**

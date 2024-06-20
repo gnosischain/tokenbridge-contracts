@@ -1,5 +1,4 @@
 pragma solidity 0.4.24;
-
 import "./Upgradeable.sol";
 import "./InitializableBridge.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
@@ -80,18 +79,28 @@ contract BasicBridge is
         boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", msgId))] = status;
     }
 
-    function _maybeRelayDataWithHashi(bytes data) internal {
+    function resendDataWithHashi(bytes data) external {
+        require(boolStorage[keccak256(data)]);
+        _dispatchMessageWithHashi(data);
+    }
+
+    function _maybeSendDataWithHashi(bytes data) internal {
         if (HASHI_IS_ENABLED) {
-            IHashiManager manager = hashiManager();
-            IYaho(manager.yaho()).dispatchMessage(
-                manager.targetChainId(),
-                manager.threshold(),
-                manager.targetAddress(),
-                data,
-                manager.reporters(),
-                manager.adapters()
-            );
+            boolStorage[keccak256(data)] = true;
+            _dispatchMessageWithHashi(data);
         }
+    }
+
+    function _dispatchMessageWithHashi(bytes data) internal {
+        IHashiManager manager = hashiManager();
+        IYaho(manager.yaho()).dispatchMessage(
+            manager.targetChainId(),
+            manager.threshold(),
+            manager.targetAddress(),
+            data,
+            manager.reporters(),
+            manager.adapters()
+        );
     }
 
     function _validateHashiMessage(uint256 chainId, uint256 threshold, address sender, address[] adapters) internal {

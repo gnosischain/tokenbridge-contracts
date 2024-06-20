@@ -76,6 +76,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     ) external returns (bytes) {
         _validateHashiMessage(chainId, threshold, sender, adapters);
         bytes32 msgId = keccak256(data);
+        require(!isApprovedByHashi(msgId));
         _setHashiApprovalForMessage(msgId, true);
     }
 
@@ -121,7 +122,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         uint256 currentNonce = nonce();
         setNonce(currentNonce + 1);
         emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce));
-        _maybeRelayDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
+        _maybeSendDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
