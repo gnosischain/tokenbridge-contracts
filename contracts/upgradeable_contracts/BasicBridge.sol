@@ -28,8 +28,8 @@ contract BasicBridge is
     bool public constant HASHI_IS_ENABLED = true;
     bool public constant HASHI_IS_MANDATORY = false;
 
-    function isApprovedByHashi(bytes32 msgId) public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", msgId))];
+    function isApprovedByHashi(bytes32 hashMsg) public view returns (bool) {
+        return boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", hashMsg))];
     }
 
     /**
@@ -75,8 +75,8 @@ contract BasicBridge is
         emit GasPriceChanged(_gasPrice);
     }
 
-    function _setHashiApprovalForMessage(bytes32 msgId, bool status) internal {
-        boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", msgId))] = status;
+    function _setHashiApprovalForMessage(bytes32 hashMsg, bool status) internal {
+        boolStorage[keccak256(abi.encodePacked("messagesApprovedByHashi", hashMsg))] = status;
     }
 
     function resendDataWithHashi(bytes data) external {

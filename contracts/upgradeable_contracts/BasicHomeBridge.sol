@@ -75,9 +75,9 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         bytes data
     ) external returns (bytes) {
         _validateHashiMessage(chainId, threshold, sender, adapters);
-        bytes32 msgId = keccak256(data);
-        require(!isApprovedByHashi(msgId));
-        _setHashiApprovalForMessage(msgId, true);
+        bytes32 hashMsg = keccak256(data);
+        require(!isApprovedByHashi(hashMsg));
+        _setHashiApprovalForMessage(hashMsg, true);
     }
 
     function submitSignature(bytes signature, bytes message) external {
