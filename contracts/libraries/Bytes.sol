@@ -32,4 +32,37 @@ library Bytes {
             addr := mload(add(_bytes, 20))
         }
     }
+
+    function slice(bytes memory data, uint256 start, uint256 length) internal pure returns (bytes memory) {
+        require(data.length >= start + length);
+
+        bytes memory tempData;
+        assembly {
+            switch iszero(length)
+                case 0 {
+                    tempData := mload(0x40)
+                    let lengthmod := and(length, 31)
+                    let mc := add(add(tempData, lengthmod), mul(0x20, iszero(lengthmod)))
+                    let end := add(mc, length)
+
+                    for {
+                        let cc := add(add(add(data, lengthmod), mul(0x20, iszero(lengthmod))), start)
+                    } lt(mc, end) {
+                        mc := add(mc, 0x20)
+                        cc := add(cc, 0x20)
+                    } {
+                        mstore(mc, mload(cc))
+                    }
+                    mstore(tempData, length)
+                    mstore(0x40, and(add(mc, 31), not(31)))
+                }
+                default {
+                    tempData := mload(0x40)
+                    mstore(tempData, 0)
+                    mstore(0x40, add(tempData, 0x20))
+                }
+        }
+
+        return tempData;
+    }
 }

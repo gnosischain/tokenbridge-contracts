@@ -1,5 +1,7 @@
 pragma solidity 0.4.24;
 
+import "./Bytes.sol";
+
 library ArbitraryMessage {
     /**
     * @dev Unpacks data fields from AMB message
@@ -85,13 +87,6 @@ library ArbitraryMessage {
             datasize := sub(mload(_data), srcdataptr)
         }
 
-        data = new bytes(datasize);
-        assembly {
-            // 36 = 4 (selector) + 32 (bytes length header)
-            srcdataptr := add(srcdataptr, 36)
-
-            // calldataload(4) - offset of first bytes argument in the calldata
-            calldatacopy(add(data, 32), add(calldataload(4), srcdataptr), datasize)
-        }
+        data = Bytes.slice(_data, srcdataptr, datasize);
     }
 }

@@ -25,7 +25,16 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
 
         (msgId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
 
-        _executeMessage(msgId, sender, executor, gasLimit, dataType, chainIds, data);
+        _executeMessage(
+            keccak256(abi.encodePacked(_data)),
+            msgId,
+            sender,
+            executor,
+            gasLimit,
+            dataType,
+            chainIds,
+            data
+        );
     }
 
     /**
@@ -57,7 +66,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
 
         (msgId, sender, executor, , dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
 
-        _executeMessage(msgId, sender, executor, _gas, dataType, chainIds, data);
+        _executeMessage(keccak256(abi.encodePacked(_data)), msgId, sender, executor, _gas, dataType, chainIds, data);
     }
 
     /**
@@ -87,6 +96,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
 
     /**
     * @dev Internal function for executing decoded message. Performs additional validation on the message fields.
+    * @param hashMsg hash of the entire message.
     * @param msgId id of the processed message.
     * @param sender sender address on the other side.
     * @param executor address of an executor.
@@ -96,6 +106,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
     * @param data calldata for a call to executor.
     */
     function _executeMessage(
+        bytes32 hashMsg,
         bytes32 msgId,
         address sender,
         address executor,
@@ -107,8 +118,23 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
         require(_isMessageVersionValid(msgId));
         require(_isDestinationChainIdValid(chainIds[1]));
         require(!relayedMessages(msgId));
+        if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
         setRelayedMessages(msgId, true);
         processMessage(sender, executor, msgId, gasLimit, dataType, chainIds[0], data);
+    }
+
+    function onMessage(
+        uint256, /*messageId*/
+        uint256 chainId,
+        address sender,
+        uint256 threshold,
+        address[] adapters,
+        bytes data
+    ) external returns (bytes) {
+        _validateHashiMessage(chainId, threshold, sender, adapters);
+        bytes32 hashMsg = keccak256(abi.encodePacked(data));
+        require(!isApprovedByHashi(hashMsg));
+        _setHashiApprovalForMessage(hashMsg, true);
     }
 
     /**

@@ -52,9 +52,7 @@ contract Rlp {
 
         // concatenate all parts of the RLP encoding in the leading bytes of
         // one 32-byte word
-        uint256 word = ((192 + tot_bytes) * 256**31) +
-                       ((128 + ADDRESS_BYTES) * 256**30) +
-                       (uint256(a) * 256**10);
+        uint256 word = ((192 + tot_bytes) * 256**31) + ((128 + ADDRESS_BYTES) * 256**30) + (uint256(a) * 256**10);
 
         if (0 < n && n < MAX_SINGLE_BYTE) {
             word += n * 256**9;
@@ -66,10 +64,9 @@ contract Rlp {
         uint256 hash;
 
         assembly {
-            let mem_start := mload(0x40)        // get a pointer to free memory
-            mstore(mem_start, word)             // store the rlp encoding
-            hash := sha3(mem_start,
-                         add(tot_bytes, 1))     // hash the rlp encoding
+            let mem_start := mload(0x40) // get a pointer to free memory
+            mstore(mem_start, word) // store the rlp encoding
+            hash := sha3(mem_start, add(tot_bytes, 1)) // hash the rlp encoding
         }
 
         // interpret hash as address (20 least significant bytes)
