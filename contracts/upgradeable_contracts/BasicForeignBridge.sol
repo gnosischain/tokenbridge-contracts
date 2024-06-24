@@ -12,7 +12,7 @@ import "./MessageRelay.sol";
 contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge, MessageRelay {
     /// triggered when relay of deposit from HomeBridge is complete
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
-    event UserRequestForAffirmation(address recipient, uint256 value);
+    event UserRequestForAffirmation(address recipient, uint256 value, bytes32 nonce);
 
     /**
     * @dev Validates provided signatures and relays a given message
@@ -24,18 +24,45 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
 
         address recipient;
         uint256 amount;
-        bytes32 txHash;
+        bytes32 nonce;
         address contractAddress;
-        (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
+        (recipient, amount, nonce, contractAddress) = Message.parseMessage(message);
         if (withinExecutionLimit(amount)) {
             require(contractAddress == address(this));
-            require(!relayedMessages(txHash));
-            setRelayedMessages(txHash, true);
-            require(onExecuteMessage(recipient, amount, txHash));
-            emit RelayedMessage(recipient, amount, txHash);
+            require(!relayedMessages(nonce));
+            setRelayedMessages(nonce, true);
+
+            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, amount, nonce));
+            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
+
+            require(onExecuteMessage(recipient, amount, nonce));
+            emit RelayedMessage(recipient, amount, nonce);
         } else {
-            onFailedMessage(recipient, amount, txHash);
+            onFailedMessage(recipient, amount, nonce);
         }
+    }
+
+    function onMessage(
+        uint256, /*messageId*/
+        uint256 chainId,
+        address sender,
+        uint256 threshold,
+        address[] adapters,
+        bytes data
+    ) external returns (bytes) {
+        _validateHashiMessage(chainId, threshold, sender, adapters);
+        bytes32 hashMsg = keccak256(data);
+        require(!isApprovedByHashi(hashMsg));
+        _setHashiApprovalForMessage(hashMsg, true);
+    }
+
+    function _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(address _receiver, uint256 _amount)
+        internal
+    {
+        uint256 currentNonce = nonce();
+        setNonce(currentNonce + 1);
+        emit UserRequestForAffirmation(_receiver, _amount, bytes32(currentNonce));
+        _maybeSendDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
     }
 
     /**

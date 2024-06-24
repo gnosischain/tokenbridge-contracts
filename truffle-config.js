@@ -42,7 +42,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 200
+          runs: 200 // NOTE: change to 100 when deploying HomeBridgeErcToNative
         },
         evmVersion
       }

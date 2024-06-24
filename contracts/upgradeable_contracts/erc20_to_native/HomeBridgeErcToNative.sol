@@ -45,7 +45,8 @@ contract HomeBridgeErcToNative is
         }
         setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
-        emit UserRequestForSignature(_receiver, valueToTransfer);
+
+        _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(_receiver, valueToTransfer);
     }
 
     function relayTokens(address _receiver) external payable {
@@ -168,11 +169,11 @@ contract HomeBridgeErcToNative is
      * Should be called only after enough affirmations from the validators are already collected.
      * @param _recipient address of the receiver where the new coins should be minted.
      * @param _value amount of coins to mint.
-     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _nonce reference to the nonce generated on the Foreign side.
      * @param _hashMsg unique identifier of the particular bridge operation.
      * @return true, if execution completed successfully.
      */
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _nonce, bytes32 _hashMsg)
         internal
         returns (bool)
     {
@@ -184,7 +185,7 @@ contract HomeBridgeErcToNative is
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, _txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _nonce);
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
@@ -214,14 +215,14 @@ contract HomeBridgeErcToNative is
      * This function saves the bridge operation information for further processing.
      * @param _recipient address of the receiver where the new coins should be minted.
      * @param _value amount of coins to mint.
-     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _nonce reference to the nonce generated on the Foreign side.
      * @param _hashMsg unique identifier of the particular bridge operation.
      */
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _nonce, bytes32 _hashMsg) internal {
         (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _hashMsg);
-        emit AmountLimitExceeded(_recipient, _value, _txHash, _hashMsg);
+        emit AmountLimitExceeded(_recipient, _value, _nonce, _hashMsg);
     }
 }

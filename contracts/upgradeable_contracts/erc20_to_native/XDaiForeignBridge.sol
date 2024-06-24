@@ -69,10 +69,18 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         claimValues(_token, _to);
     }
 
+    /**
+     * @dev Withdraws the DAI tokens if they are mistakenly sent to this contract after the Hashi integration, as the Transfer event will no longer be supported.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function recoverLegacyTransfer(address _to) external onlyIfUpgradeabilityOwner {
+        claimValues(address(daiToken()), _to);
+    }
+
     function onExecuteMessage(
         address _recipient,
         uint256 _amount,
-        bytes32 /*_txHash*/
+        bytes32 /*_nonce*/
     ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
