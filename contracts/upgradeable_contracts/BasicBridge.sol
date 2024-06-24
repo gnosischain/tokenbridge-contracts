@@ -80,13 +80,13 @@ contract BasicBridge is
     }
 
     function resendDataWithHashi(bytes data) external {
-        require(boolStorage[keccak256(data)]);
+        require(boolStorage[keccak256(abi.encodePacked("dataSentWithHashi", data))]);
         _dispatchMessageWithHashi(data);
     }
 
     function _maybeSendDataWithHashi(bytes data) internal {
         if (HASHI_IS_ENABLED) {
-            boolStorage[keccak256(data)] = true;
+            boolStorage[keccak256(abi.encodePacked("dataSentWithHashi", data))] = true;
             _dispatchMessageWithHashi(data);
         }
     }
