@@ -70,7 +70,8 @@ contract AsyncInformationProcessor is BasicHomeAMB {
      * @param _status true, if JSON-RPC request succeeded, false otherwise.
      * @param _result call result returned by the other side of the bridge.
      */
-    function confirmInformation(bytes32 _messageId, bool _status, bytes _result) external onlyValidator {
+    function confirmInformation(bytes32 _messageId, bool _status, bytes _result) external {
+        _onlyValidator();
         bytes32 hashMsg = keccak256(abi.encodePacked(_messageId, _status, _result));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
         // Duplicated confirmations

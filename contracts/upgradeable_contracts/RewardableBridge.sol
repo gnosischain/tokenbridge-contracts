@@ -119,12 +119,12 @@ contract RewardableBridge is Ownable, FeeTypes {
      * @dev Internal function for distributing the fee for collecting sufficient amount of signatures.
      * @param _fee amount of fee to distribute.
      * @param _feeManager address of the fee manager contract.
-     * @param _txHash reference transaction hash where the original bridge request happened.
+     * @param _nonce reference to the nonce generated on the Foreign side.
      */
-    function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
+    function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _nonce) internal {
         if (_fee > 0) {
             require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_SIGNATURES, _fee)));
-            emit FeeDistributedFromSignatures(_fee, _txHash);
+            emit FeeDistributedFromSignatures(_fee, _nonce);
         }
     }
 
@@ -132,12 +132,12 @@ contract RewardableBridge is Ownable, FeeTypes {
      * @dev Internal function for distributing the fee for collecting sufficient amount of affirmations.
      * @param _fee amount of fee to distribute.
      * @param _feeManager address of the fee manager contract.
-     * @param _txHash reference transaction hash where the original bridge request happened.
+     * @param _nonce reference to the nonce generated on the Foreign side.
      */
-    function distributeFeeFromAffirmation(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
+    function distributeFeeFromAffirmation(uint256 _fee, address _feeManager, bytes32 _nonce) internal {
         if (_fee > 0) {
             require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_AFFIRMATION, _fee)));
-            emit FeeDistributedFromAffirmation(_fee, _txHash);
+            emit FeeDistributedFromAffirmation(_fee, _nonce);
         }
     }
 }

@@ -9,14 +9,12 @@ contract Validatable is EternalStorage, ValidatorStorage {
         return IBridgeValidators(addressStorage[VALIDATOR_CONTRACT]);
     }
 
-    modifier onlyValidator() {
-        require(validatorContract().isValidator(msg.sender));
-        /* solcov ignore next */
-        _;
-    }
-
     function requiredSignatures() public view returns (uint256) {
         return validatorContract().requiredSignatures();
+    }
+
+    function _onlyValidator() internal {
+        require(validatorContract().isValidator(msg.sender));
     }
 
 }

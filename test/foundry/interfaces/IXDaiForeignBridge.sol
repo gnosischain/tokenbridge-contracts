@@ -61,7 +61,7 @@ interface IXDaiForeignBridge {
     function previewWithdraw(address _token, uint256 _amount) external view returns (uint256);
     function refillBridge() external;
     function relayTokens(address _receiver, uint256 _amount) external;
-    function relayedMessages(bytes32 _txHash) external view returns (bool);
+    function relayedMessages(bytes32 _nonce) external view returns (bool);
     function requiredBlockConfirmations() external view returns (uint256);
     function requiredSignatures() external view returns (uint256);
     function sDaiToken() external pure returns (address);

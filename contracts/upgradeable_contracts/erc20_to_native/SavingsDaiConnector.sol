@@ -9,7 +9,6 @@ import "../../interfaces/ISavingsDai.sol";
  * @dev This must never be deployed standalone and only as an interface to interact with the SavingsDAI from the InterestConnector
  */
 contract SavingsDaiConnector is InterestConnector {
-
     /**
      * @dev Tells the address of the DAI token in the Ethereum Mainnet.
      */
@@ -75,7 +74,7 @@ contract SavingsDaiConnector is InterestConnector {
      * @param _token address of the token contract.
      * @param _amount minimal amount of tokens to withdraw.
      */
-    function previewWithdraw(address _token, uint256 _amount) public view returns(uint256){
+    function previewWithdraw(address _token, uint256 _amount) public view returns (uint256) {
         (_token);
         return sDaiToken().previewWithdraw(_amount);
     }

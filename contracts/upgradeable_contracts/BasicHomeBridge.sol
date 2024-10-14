@@ -15,10 +15,10 @@ import "./BasicTokenBridge.sol";
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;
 
-    event UserRequestForSignature(address recipient, uint256 value);
-    event AffirmationCompleted(address recipient, uint256 value, bytes32 transactionHash);
+    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce);
+    event AffirmationCompleted(address recipient, uint256 value, bytes32 nonce);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
-    event SignedForAffirmation(address indexed signer, bytes32 transactionHash);
+    event SignedForAffirmation(address indexed signer, bytes32 nonce);
     event CollectedSignatures(
         address authorityResponsibleForRelay,
         bytes32 messageHash,
@@ -30,10 +30,11 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
      * Can be called only by a current bridge validator.
      * @param recipient tokens/coins of receiver address, where the assets should be unlocked/minted.
      * @param value amount of assets to unlock/mint.
-     * @param transactionHash reference event transaction hash on the Foreign side of the bridge.
+     * @param nonce reference nonce on the Foreign side of the bridge.
      */
-    function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
-        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
+    function executeAffirmation(address recipient, uint256 value, bytes32 nonce) external {
+        _onlyValidator();
+        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, nonce));
         if (withinExecutionLimit(value)) {
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
             // Duplicated affirmations
@@ -47,23 +48,40 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             setNumAffirmationsSigned(hashMsg, signed);
 
-            emit SignedForAffirmation(msg.sender, transactionHash);
+            emit SignedForAffirmation(msg.sender, nonce);
+
+            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
 
             if (signed >= requiredSignatures()) {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
                 if (value > 0) {
-                    require(onExecuteAffirmation(recipient, value, transactionHash, hashMsg));
+                    require(onExecuteAffirmation(recipient, value, nonce, hashMsg));
                 }
-                emit AffirmationCompleted(recipient, value, transactionHash);
+                emit AffirmationCompleted(recipient, value, nonce);
             }
         } else {
-            onFailedAffirmation(recipient, value, transactionHash, hashMsg);
+            onFailedAffirmation(recipient, value, nonce, hashMsg);
         }
     }
 
-    function submitSignature(bytes signature, bytes message) external onlyValidator {
+    function onMessage(
+        uint256, /*messageId*/
+        uint256 chainId,
+        address sender,
+        uint256 threshold,
+        address[] adapters,
+        bytes data
+    ) external returns (bytes) {
+        _validateHashiMessage(chainId, threshold, sender, adapters);
+        bytes32 hashMsg = keccak256(data);
+        require(!isApprovedByHashi(hashMsg));
+        _setHashiApprovalForMessage(hashMsg, true);
+    }
+
+    function submitSignature(bytes signature, bytes message) external {
+        _onlyValidator();
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
         require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message, false));
@@ -96,6 +114,15 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
             onSignaturesCollected(message);
         }
+    }
+
+    function _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(address _receiver, uint256 _amount)
+        internal
+    {
+        uint256 currentNonce = nonce();
+        setNonce(currentNonce + 1);
+        emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce));
+        _maybeSendDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
@@ -162,9 +189,5 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
 
     function numMessagesSigned(bytes32 _message) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
-    }
-
-    function requiredMessageLength() public pure returns (uint256) {
-        return Message.requiredMessageLength();
     }
 }

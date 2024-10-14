@@ -17,7 +17,8 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
 
     uint256 internal constant SEND_TO_MANUAL_LANE = 0x80;
 
-    function executeAffirmation(bytes message) external onlyValidator {
+    function executeAffirmation(bytes message) external {
+        _onlyValidator();
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
         // Duplicated affirmations
@@ -69,7 +70,8 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         processMessage(sender, executor, messageId, gasLimit, dataType, chainIds[0], data);
     }
 
-    function submitSignature(bytes signature, bytes message) external onlyValidator {
+    function submitSignature(bytes signature, bytes message) external {
+        _onlyValidator();
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message, true));
         bytes32 hashMsg = keccak256(abi.encodePacked(message));

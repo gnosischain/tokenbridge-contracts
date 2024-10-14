@@ -29,23 +29,33 @@ library Message {
     function parseMessage(bytes message)
         internal
         pure
-        returns (address recipient, uint256 amount, bytes32 txHash, address contractAddress)
+        returns (address recipient, uint256 amount, bytes32 nonce, address contractAddress)
     {
         require(isMessageValid(message));
         assembly {
             recipient := mload(add(message, 20))
             amount := mload(add(message, 52))
-            txHash := mload(add(message, 84))
+            nonce := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
         }
     }
 
-    function isMessageValid(bytes _msg) internal pure returns (bool) {
-        return _msg.length == requiredMessageLength();
+    // layout of message :: bytes:
+    // offset  0: 32 bytes :: uint256 - message length
+    // offset 32: 20 bytes :: address - recipient address
+    // offset 52: 32 bytes :: uint256 - value
+    // offset 84: 32 bytes :: bytes32 - nonce
+    function parseHashiMessage(bytes message) internal pure returns (address recipient, uint256 amount, bytes32 nonce) {
+        require(message.length == 84);
+        assembly {
+            recipient := mload(add(message, 20))
+            amount := mload(add(message, 52))
+            nonce := mload(add(message, 84))
+        }
     }
 
-    function requiredMessageLength() internal pure returns (uint256) {
-        return 104;
+    function isMessageValid(bytes _msg) internal pure returns (bool) {
+        return _msg.length == 104;
     }
 
     function recoverAddressFromSignedMessage(bytes signature, bytes message, bool isAMBMessage)
