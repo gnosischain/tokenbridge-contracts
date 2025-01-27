@@ -43,7 +43,6 @@ interface IXDaiForeignBridge {
         uint256 _minInterestPaid,
         address _interestReceiver
     ) external;
-    function swapSDAIToUSDS() external;
     function interestAmount(address _token) external view returns (uint256);
     function interestReceiver(address _token) external view returns (address);
     function invest(address _token) external;

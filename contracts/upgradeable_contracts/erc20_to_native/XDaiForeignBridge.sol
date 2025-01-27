@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 import "./ForeignBridgeErcToNative.sol";
 import "./SavingsDaiConnector.sol";
 import "../GSNForeignERC20Bridge.sol";
+import "../../interfaces/IDaiUsds.sol";
 
 contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSNForeignERC20Bridge {
     function initialize(
@@ -34,8 +35,37 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         return isInitialized();
     }
 
+    /**
+     * @dev return the address of USDS
+     */
     function erc20token() public view returns (ERC20) {
         return daiToken();
+    }
+
+    /**
+     * @dev one time function to be called during bridge upgrade
+     */
+    function swapSDAIToUSDS() public {
+        bytes32 isUSDSBridgeUpgrade = keccak256("upgrade_DAI_to_USDS");
+        require(!boolStorage[isUSDSBridgeUpgrade], "USDS bridge ugprade completed");
+
+        address sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+        address DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        address DaiUsds = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
+
+        // withdraw all sDAI into DAI
+        uint256 maxWithdrawable = ISavingsDai(sDAI).maxWithdraw(address(this));
+        ISavingsDai(sDAI).withdraw(maxWithdrawable, address(this), address(this));
+        // disableInterest for DAI
+        _setInvestedAmount(DAI, 0);
+        _setInterestEnabled(DAI, false);
+
+        // swap DAI -> USDS
+        uint256 remainDAI = ERC20(DAI).balanceOf(address(this));
+        ERC20(DAI).approve(DaiUsds, remainDAI);
+        IDaiUsds(DaiUsds).daiToUsds(address(this), remainDAI);
+
+        boolStorage[isUSDSBridgeUpgrade] = true;
     }
 
     /**

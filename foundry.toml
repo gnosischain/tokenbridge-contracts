@@ -4,10 +4,14 @@ test = 'test/foundry'
 script = 'script'
 out = 'out'
 libs = ['lib']
-remappings = []
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/"
+    ]
 optimizer = true
 optimizer-runs = 10_000
-
+auto_detect_solc = true
+fs_permissions = [{ access = "read", path = "./out"}]
 
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"
