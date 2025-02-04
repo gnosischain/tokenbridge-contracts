@@ -9,7 +9,7 @@ remappings = [
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/"
     ]
 optimizer = true
-optimizer-runs = 10_000
+optimizer-runs = 200
 auto_detect_solc = true
 fs_permissions = [{ access = "read", path = "./out"}]
 
