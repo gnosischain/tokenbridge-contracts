@@ -98,54 +98,6 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         vm.stopPrank();
     }
 
-    /*//////////////////////////////////////////////////////////////
-                        CORE LOGIC
-    //////////////////////////////////////////////////////////////*/
-
-    // function testFuzzRefillBridge(uint256 minCashThreshold) public {
-    //     upgradeAndInitializeInterest();
-    //     minCashThreshold = bound(minCashThreshold, 1, USDS.totalSupply());
-    //  //  vm.assume(minCashThreshold > 0);
-    //     vm.prank(bridgeOwner);
-    //     bridge.setMinCashThreshold(address(USDS), minCashThreshold);
-
-    //     uint256 initialBalance = USDS.balanceOf(bridgeAddress);
-    //     uint256 initialInvested = bridge.investedAmount(address(USDS));
-    //     uint256 initialCollectable = bridge.interestAmount(address(USDS));
-
-    //     if (initialBalance < minCashThreshold) {
-    //         bridge.refillBridge();
-
-    //         uint256 afterBalance = USDS.balanceOf(bridgeAddress);
-    //         uint256 afterInvested = bridge.investedAmount(address(USDS));
-    //         uint256 afterCollectable = bridge.interestAmount(address(USDS));
-
-    //         assertLt(initialBalance, minCashThreshold);
-    //         assertGe(afterBalance, initialBalance);
-    //         assertLt(afterInvested, initialInvested);
-
-    //         //Aproximately the same - slightly lower ue to ERC4626 math rounding
-    //         assertLt(afterCollectable, initialCollectable);
-    //         // assertGt(afterCollectable, initialCollectable - 100);
-
-    //         if (minCashThreshold > initialBalance + initialInvested) {
-    //             assertLt(afterBalance, minCashThreshold); // ?
-    //             if (initialInvested > 0) {
-    //                 assertGt(afterBalance, initialBalance);
-    //             } else {
-    //                 assertEq(afterBalance, initialBalance);
-    //             }
-    //         } else {
-    //             //Aproximately the same - slightly off due to ERC4626 math rounding
-    //             assertGt(afterBalance, minCashThreshold - 100); // 100 doesn't make sense here
-    //             assertLe(afterBalance, minCashThreshold);
-    //         }
-    //     } else {
-    //         vm.expectRevert(bytes("Bridge is Filled"));
-    //         bridge.refillBridge();
-    //     }
-    // }
-
     // Dev: we keep the same function name investDai() but USDS is invested as underlying asset
     function testFuzzInvestUSDS(uint256 amount) public {
         upgradeAndInitializeInterest();

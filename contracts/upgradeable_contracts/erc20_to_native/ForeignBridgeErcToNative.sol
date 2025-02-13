@@ -69,7 +69,6 @@ contract ForeignBridgeErcToNative is ERC20Bridge, OtherSideBridgeStorage {
         require(withinLimit(_amount), "Exceeds bridge daily limit");
         addTotalSpentPerDay(getCurrentDay(), _amount);
         erc20token().transferFrom(msg.sender, address(this), _amount);
-        // TODO: current mainnet xDAI bridge not yet upgrade to Hashi version
-        // _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(_receiver, _amount);
+        _emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(_receiver, _amount);
     }
 }

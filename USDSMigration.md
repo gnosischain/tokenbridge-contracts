@@ -16,6 +16,7 @@ source .env
 forge test --fork-url $RPC_MAINNET
 ```
 
+In fork test, tx will revert because Hashi migration on xDAI bridge is not yet implemented on Ethereum. Please comment out `_emitUserRequestForAffirmationIncreaseNonceAndMaybeSendDataWithHashi(_receiver, _amount);` in `contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol`
 or
 
 ```
@@ -32,7 +33,7 @@ forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_MAINNET --private-key $PR
 
 ## New contracts
 
-1. `BridgeRouter.sol`: An entry point for token transferring, abstracting relayTokens() for Omnibridge and xDAI bridge.
+1. `BridgeRouter.sol`: An entry point for token transferring, abstracting relayTokens() for Omnibridge and xDAI bridge. Upgradeable with TransparentUpgradeableProxy.
 2. `XDaiBridgeperipheral.sol`: Peripheral contract to convert between DAI and USDS after bridge migration.
 
 ## Modified contracts

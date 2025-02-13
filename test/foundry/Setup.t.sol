@@ -97,7 +97,7 @@ contract SetupTest is Test {
         assertEq(address(newImpl), bridgeProxy.implementation());
         console.log("upgraded bridge to version %s", initialVersion + 1);
 
-        // disable interested for DAIA and swap sUSDS -> sUSDS
+        // disable interested for DAI and swap sDAI -> sUSDS
         bridge.swapSDAIToUSDS();
         bridge.initializeInterest(
             address(USDS),
