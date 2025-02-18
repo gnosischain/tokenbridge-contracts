@@ -14,10 +14,10 @@ interface IDaiUsds {
 /// @dev This contract is non upgradeable and only callable by BridgeRouter contract
 contract XDaiBridgePeripheral {
     address public router;
-    address public DAIUSDS = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
-    address public FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
-    address public USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
-    address public DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant DAIUSDS = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
+    address public constant FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
+    address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     modifier onlyRouter() {
         require(msg.sender == router, "only Router");

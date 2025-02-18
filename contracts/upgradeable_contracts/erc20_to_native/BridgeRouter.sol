@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IForeignBridge } from "../../interfaces/IForeignBridge.sol";
+import { IXDaiForeignBridge } from "../../interfaces/IXDaiForeignBridge.sol";
 import { IXDaiBridgePeripheral } from "../../interfaces/IXDaiBridgePeripheral.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IWETHOmnibridgeRouter } from "../../interfaces/IWETHOmnibridgeRouter.sol";
@@ -12,13 +13,12 @@ import { IWETHOmnibridgeRouter } from "../../interfaces/IWETHOmnibridgeRouter.so
 /// @dev this intended to be an upgradeable contract
 contract BridgeRouter is OwnableUpgradeable {
 
-    address public immutable FOREIGN_OMNIBRIDGE = 0x88ad09518695c6c3712AC10a214bE5109a655671;
-    address public immutable FOREIGN_AMB = 0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e;
-    address public immutable FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
-    address public immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public immutable USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
-    address public immutable WETH_OMNIBRIDGE_ROUTER = 0xa6439Ca0FCbA1d0F80df0bE6A17220feD9c9038a;
-    uint256[49] __gap;
+    address public constant FOREIGN_OMNIBRIDGE = 0x88ad09518695c6c3712AC10a214bE5109a655671;
+    address public constant FOREIGN_AMB = 0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e;
+    address public constant FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
+    address public constant WETH_OMNIBRIDGE_ROUTER = 0xa6439Ca0FCbA1d0F80df0bE6A17220feD9c9038a;
 
     mapping(address => address) public tokenRoutes;
 
@@ -41,7 +41,7 @@ contract BridgeRouter is OwnableUpgradeable {
             // token need to be transferred to router contract first, because the bridge will call transferFrom(msg.sender, bridge, amount);
             IERC20(_token).transferFrom(msg.sender, address(this), _amount);
             IERC20(_token).approve(route, _amount);
-            IXDaiBridgePeripheral(route).relayTokens(_receiver, _amount);
+            IXDaiForeignBridge(route).relayTokens(_receiver, _amount);
         } else if(_token == address(0)){
             // call wrapAndRelayTokens
             require(msg.value == _amount, "msg.value mismatch");
@@ -101,14 +101,15 @@ contract BridgeRouter is OwnableUpgradeable {
     /// @notice Allows to transfer any locked token from this contract.
     /// @param token token to recover
     /// @param recipient recipient of token
-    function recoverLockedFund(address token, address recipient) external onlyOwner {
+    /// @param amount token amount
+    function recoverLockedFund(address token, address recipient, uint256 amount) external onlyOwner {
         if(token == address(0)){
-            uint256 value = address(this).balance;
-            require(value> 0, "zero balance");
-            require(payable(recipient).send(value), "unsuccesssful sent");
+            uint256 balance = address(this).balance;
+            require(amount <= balance, "no enough ETH to withdraw");
+            require(payable(recipient).send(amount), "unsuccesssful sent");
         }else{
-            require(IERC20(token).balanceOf(address(this))> 0, "zero balance");
-            IERC20(token).transfer(recipient, IERC20(token).balanceOf(address(this)));
+            require(amount <= IERC20(token).balanceOf(address(this)), "no enough balance to withdraw");
+            IERC20(token).transfer(recipient, amount);
         }
        
     }

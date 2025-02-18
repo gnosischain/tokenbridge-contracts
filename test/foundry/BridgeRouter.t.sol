@@ -278,13 +278,15 @@ contract BridgeRouterTest is SetupTest {
 
         vm.prank(alice);
         vm.expectRevert();
-        router.recoverLockedFund(address(USDS), alice);
+        router.recoverLockedFund(address(USDS), alice, amount);
 
 
         vm.startPrank(bridgeOwner);
-        router.recoverLockedFund(address(USDS), alice);
-        vm.expectRevert("zero balance");
-        router.recoverLockedFund(address(0), alice);
+        router.recoverLockedFund(address(USDS), alice, amount);
+        vm.expectRevert(bytes("no enough balance to withdraw"));
+        router.recoverLockedFund(address(USDS), alice, amount);
+        vm.expectRevert(bytes("no enough ETH to withdraw"));
+        router.recoverLockedFund(address(0), alice, amount);
 
         vm.stopPrank();
 
