@@ -21,7 +21,7 @@ contract PeripheralTest is SetupTest {
         peripheral.relayTokens(makeAddr("token"), amount);
 
         vm.expectRevert("revert: only Router");
-        peripheral.executeSignaturesAndSwapToDai("0x", "0x", "0x");
+        peripheral.executeSignaturesAndSwapToDai("0x", "0x", "0x", block.timestamp);
 
         vm.stopPrank();
     }

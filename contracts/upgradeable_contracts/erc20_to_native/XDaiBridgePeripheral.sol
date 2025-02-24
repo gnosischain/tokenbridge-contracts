@@ -47,7 +47,7 @@ contract XDaiBridgePeripheral {
     /// @param message data about the claiming tx for `executeSignatures`
     /// @param signatures signatures from bridge valdiators
     /// @param permitSignatures signature signed by the receiver of the tx to permit this contract doing the swap action)
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures)
+    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures, uint256 permitDeadline)
         external
         onlyRouter
     {
@@ -63,7 +63,7 @@ contract XDaiBridgePeripheral {
             nonce := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
         }
-        IERC20(USDS).permit(recipient, address(this), amount, block.timestamp + 1 days, permitSignatures);
+        IERC20(USDS).permit(recipient, address(this), amount, permitDeadline, permitSignatures);
         IERC20(USDS).transferFrom(recipient, address(this), amount);
         IERC20(USDS).approve(DAIUSDS, amount);
         IDaiUsds(DAIUSDS).usdsToDai(recipient, amount);

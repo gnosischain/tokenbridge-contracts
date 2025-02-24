@@ -22,9 +22,14 @@ contract BridgeRouter is OwnableUpgradeable {
 
     mapping(address => address) public tokenRoutes;
 
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    constructor(){
+        _disableInitializers();
     }
+
+    function initialize(address owner) public initializer {
+        __Ownable_init(owner);
+    }
+
 
     /// @notice An entry point contract for user to bridge any token from source chain
     /// @dev Directs route to relevant contract to perform token relaying
@@ -86,7 +91,7 @@ contract BridgeRouter is OwnableUpgradeable {
     /// @param message data for claiming tx
     /// @param signatures signatures from bridge validators
     /// @param permitSignatures permit signature by token receiver
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures)
+    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures, uint256 permitDeadline)
         external
     {
         require(message.length == 104, "invalid message length");
@@ -94,7 +99,8 @@ contract BridgeRouter is OwnableUpgradeable {
         IXDaiBridgePeripheral(xdaiBridgePeripheral).executeSignaturesAndSwapToDai(
             message,
             signatures,
-            permitSignatures
+            permitSignatures,
+            permitDeadline
         );
     }
 

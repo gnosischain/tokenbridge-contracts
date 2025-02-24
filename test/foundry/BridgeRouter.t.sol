@@ -2,7 +2,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/console.sol";
 import "forge-std/interfaces/IERC20.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { TransparentUpgradeableProxy, ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { BridgeRouter } from "../../contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol";
 import { XDaiBridgePeripheral } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
 import { MockContractReceiver } from "../../contracts/mocks/MockContractReceiver.sol";
@@ -15,36 +17,75 @@ contract BridgeRouterTest is SetupTest {
     BridgeRouter router;
     XDaiBridgePeripheral peripheral;
     TransparentUpgradeableProxy routerProxy;
+    ProxyAdmin proxyAdmin;
+    address proxyAdminOwner = makeAddr("proxyAdminOwner");
     address public FOREIGN_OMNIBRIDGE = 0x88ad09518695c6c3712AC10a214bE5109a655671;
     address public FOREIGN_AMB = 0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e;
     address public FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    bytes32 implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
+    bytes32 adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
+
 
     function setUp() public payable override {
         super.setUp();
         vm.startPrank(bridgeOwner);
         router = new BridgeRouter();
+        address routerImplAddress = address(router);
        
         routerProxy = new TransparentUpgradeableProxy(
             address(router),
-            bridgeOwner,
-            abi.encodeWithSignature("initialize()")
+            proxyAdminOwner,
+            abi.encodeWithSignature("initialize(address)", bridgeOwner)
         );
         router = BridgeRouter(address(routerProxy));
-        assertEq(router.owner(), bridgeOwner);
-
+        implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
+        adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
+        // dev: new proxy Admin contract that is deployed during TransparentUpgradeableProxy contract deployment
+        proxyAdmin = ProxyAdmin(0xb1d655Ab5C2CDF913979a399836aAE18DD711Faa);
+       
+        assertEq(router.owner(), bridgeOwner,  "invalid router owner");
+        assertEq(address(uint160(uint256(implementationSlot))), routerImplAddress, "invalid implementation");
+        assertEq(proxyAdmin.owner(), proxyAdminOwner, "invalid proxy admin owner ");
+        assertEq(address(uint160(uint256(adminSlot))),address(proxyAdmin), "invalid admin slot");
+        
+        
+ 
         peripheral = new XDaiBridgePeripheral(address(routerProxy));
-
+        
+        vm.startPrank(bridgeOwner);
         router.setRoute(address(DAI), address(peripheral));
         router.setRoute(address(USDS), FOREIGN_XDAIBRIDGE);
+        vm.stopPrank();
 
         upgradeAndInitializeInterest();
         vm.stopPrank();
     }
 
-    function testRouteMetadata() public {
+
+    function testRouterMetadata() public {
         assertEq(router.tokenRoutes(address(DAI)), address(peripheral));
         assertEq(router.tokenRoutes(address(USDS)), FOREIGN_XDAIBRIDGE);
+    }
+
+    function testRouterUpgrade() public {
+        BridgeRouter newRouterImpl = new BridgeRouter();
+       
+        vm.prank(bridgeOwner);
+        vm.expectRevert();
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(routerProxy)), address(newRouterImpl), "");
+
+        vm.prank(proxyAdminOwner);
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(routerProxy)), address(newRouterImpl), "");
+
+        implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
+        adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
+
+        assertEq(router.owner(), bridgeOwner,  "invalid router owner");
+        assertEq(proxyAdmin.owner(), proxyAdminOwner, "invalid proxy admin owner ");
+        assertEq(address(uint160(uint256(adminSlot))),address(proxyAdmin), "invalid admin slot");
+        assertEq(address(uint160(uint256(implementationSlot))), address(newRouterImpl), "invalid implementation");
+        
     }
 
     function testFuzzRelayDaiToken(uint256 amount) public {
@@ -183,6 +224,7 @@ contract BridgeRouterTest is SetupTest {
 
         uint256 nonce = USDS.nonces(alice);
 
+        uint256 permitDeadline = block.timestamp + 1 days;
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -194,7 +236,7 @@ contract BridgeRouterTest is SetupTest {
                         address(peripheral),
                         amount,
                         nonce,
-                        block.timestamp + 1 days
+                        permitDeadline
                     )
                 )
             )
@@ -202,7 +244,58 @@ contract BridgeRouterTest is SetupTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, digest);
         bytes memory permitSignatures = abi.encodePacked(r, s, v);
 
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures);
+        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
+
+        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalance + amount);
+
+    }
+
+
+      function testFailExecuteSignatureAndGetDaiwithInvalidDeadline(uint256 amount) public {
+        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+        vm.assume(bridge.withinExecutionLimit(amount));
+        addMockValidator();
+         
+        bytes32 xdaiBridgeNonce = bytes32(uint256(20000000));
+        uint256 aliceInitialDaiBalance = DAI.balanceOf(alice);
+
+       
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            xdaiBridgeNonce,
+            bridgeAddress,
+            validatorPk
+        );
+
+        uint256 nonce = USDS.nonces(alice);
+
+        uint256 permitDeadline = block.timestamp + 1 days;
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                USDS.DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        USDS.PERMIT_TYPEHASH(),
+                        alice,
+                        address(peripheral),
+                        amount,
+                        nonce,
+                        permitDeadline
+                    )
+                )
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, digest);
+        bytes memory permitSignatures = abi.encodePacked(r, s, v);
+
+
+        teleport(permitDeadline + 1 days);
+
+        vm.expectRevert("Usds/permit-expired");
+        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
 
         assertEq(DAI.balanceOf(alice), aliceInitialDaiBalance + amount);
 
@@ -231,6 +324,8 @@ contract BridgeRouterTest is SetupTest {
 
         uint256 nonce = USDS.nonces(address(mockContractReceiver));
 
+        uint256 permitDeadline = block.timestamp + 1 days;
+
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -242,7 +337,7 @@ contract BridgeRouterTest is SetupTest {
                         address(peripheral),
                         amount,
                         nonce,
-                        block.timestamp + 1 days
+                       permitDeadline
                     )
                 )
             )
@@ -250,7 +345,7 @@ contract BridgeRouterTest is SetupTest {
 
         bytes memory permitSignatures = '0x00'; 
 
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures);
+        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
 
         assertEq(DAI.balanceOf(address(mockContractReceiver)), receiverInitialDaiBalance + amount);
 
