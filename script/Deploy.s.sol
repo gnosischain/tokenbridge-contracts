@@ -11,6 +11,8 @@ contract DeployScript is Script{
 
        function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // Disclaimer: In production, bridgeOwner should not be an EOA,
+        // as it exposes a front-run vulnerability.
         address bridgeOwner = vm.envAddress("BRIDGE_OWNER");
         address proxyAdminOwner = vm.envAddress("PROXY_ADMIN_OWNER");
         vm.startBroadcast(deployerPrivateKey);
