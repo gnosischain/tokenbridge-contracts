@@ -59,7 +59,7 @@ contract BridgeRouter is OwnableUpgradeable {
         }
     }
 
-    /// @notice Set route for specific token
+    /// @notice Set route for specific token. Be aware of pending cross chain transactions before updating the route.
     /// @param _token token address
     /// @param _route router contract address
     function setRoute(address _token, address _route) public onlyOwner {
