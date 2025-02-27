@@ -47,10 +47,12 @@ contract XDaiBridgePeripheral {
     /// @param message data about the claiming tx for `executeSignatures`
     /// @param signatures signatures from bridge valdiators
     /// @param permitSignatures signature signed by the receiver of the tx to permit this contract doing the swap action)
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures, uint256 permitDeadline)
-        external
-        onlyRouter
-    {
+    function executeSignaturesAndSwapToDai(
+        bytes memory message,
+        bytes memory signatures,
+        bytes memory permitSignatures,
+        uint256 permitDeadline
+    ) external onlyRouter {
         require(message.length == 104, "Invalid data length");
         IForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
         address recipient;
