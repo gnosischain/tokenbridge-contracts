@@ -66,6 +66,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         IDaiUsds(DaiUsds).daiToUsds(address(this), remainDAI);
 
         boolStorage[isUSDSBridgeUpgrade] = true;
+        addressStorage[keccak256(abi.encodePacked("daiUsds"))] = DaiUsds;
     }
 
     /**
@@ -100,11 +101,47 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     }
 
     /**
+    * @dev Validates provided signatures and relays a given message, recipient should receive USDS 
+    * @param message bytes to be relayed
+    * @param signatures bytes blob with signatures to be validated
+    */
+    function executeSignaturesUSDS(bytes message, bytes signatures) external {
+        Message.hasEnoughValidSignatures(message, signatures, validatorContract(), false);
+
+        address recipient;
+        uint256 amount;
+        bytes32 nonce;
+        address contractAddress;
+        (recipient, amount, nonce, contractAddress) = Message.parseMessage(message);
+        if (withinExecutionLimit(amount)) {
+            require(contractAddress == address(this));
+            require(!relayedMessages(nonce));
+            setRelayedMessages(nonce, true);
+
+            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, amount, nonce));
+            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
+
+            require(onExecuteMessageUSDS(recipient, amount, nonce));
+            emit RelayedMessage(recipient, amount, nonce);
+        } else {
+            onFailedMessage(recipient, amount, nonce);
+        }
+    }
+    /**
      * @dev Withdraws the DAI tokens if they are mistakenly sent to this contract after the Hashi integration, as the Transfer event will no longer be supported.
      * @param _to address of the tokens/coins receiver.
      */
     function recoverLegacyTransfer(address _to) external onlyIfUpgradeabilityOwner {
         claimValues(address(daiToken()), _to);
+    }
+
+    function daiUsds() public view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("daiUsds"))];
+    }
+
+    function setDaiUsds(address _daiUsds) external onlyOwner {
+        require(_daiUsds != addressStorage[keccak256(abi.encodePacked("daiUsds"))] && _daiUsds != address(0));
+        addressStorage[keccak256(abi.encodePacked("daiUsds"))] = _daiUsds;
     }
 
     function onExecuteMessage(
@@ -117,7 +154,40 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         ERC20 token = daiToken();
         ensureEnoughTokens(token, _amount);
 
-        return token.transfer(_recipient, _amount);
+        if (boolStorage[keccak256("upgrade_DAI_to_USDS")]) {
+            // if bridge is upgraded to USDS, swap to DAI and send to recipient
+            token.transfer(address(this), _amount);
+            ERC20(IDaiUsds(daiUsds()).usds()).approve(daiUsds(), _amount);
+            IDaiUsds(daiUsds()).usdsToDai(address(this), _amount);
+            return ERC20(IDaiUsds(daiUsds()).dai()).transfer(_recipient, _amount);
+        } else {
+            return token.transfer(_recipient, _amount);
+        }
+
+    }
+
+    function onExecuteMessageUSDS(
+        address _recipient,
+        uint256 _amount,
+        bytes32 /*_nonce*/
+    ) internal returns (bool) {
+        addTotalExecutedPerDay(getCurrentDay(), _amount);
+
+        ERC20 token = daiToken();
+        ensureEnoughTokens(token, _amount);
+        if (boolStorage[keccak256("upgrade_DAI_to_USDS")]) {
+            // if bridge is upgraded to USDS, send Usds to recipient
+            return token.transfer(_recipient, _amount);
+
+        } else {
+            // if bridge is not upgraded to USDS, swap to USDS and send to recipient
+            token.transfer(address(this), _amount);
+            ERC20(IDaiUsds(daiUsds()).dai()).approve(daiUsds(), _amount);
+            IDaiUsds(daiUsds()).daiToUsds(address(this), _amount);
+            return ERC20(IDaiUsds(daiUsds()).usds()).transfer(_recipient, _amount);
+
+        }
+
     }
 
     function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {

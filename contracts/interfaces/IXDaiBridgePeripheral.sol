@@ -6,7 +6,6 @@ interface IXDaiBridgePeripheral {
     function DAIUSDS() external view returns (address);
     function FOREIGN_XDAIBRIDGE() external view returns (address);
     function USDS() external view returns (address);
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures, uint256 permitDeadline) external;
     function relayTokens(address receiver, uint256 amount) external;
     function router() external view returns (address);
 }

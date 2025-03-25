@@ -20,6 +20,8 @@ contract BridgeRouter is OwnableUpgradeable {
     address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
     address public constant WETH_OMNIBRIDGE_ROUTER = 0xa6439Ca0FCbA1d0F80df0bE6A17220feD9c9038a;
 
+    error ClaimUsdsNotSupported();
+
     mapping(address => address) public tokenRoutes;
 
     constructor(){
@@ -74,34 +76,40 @@ contract BridgeRouter is OwnableUpgradeable {
 
     /// @notice Claim token function
     /// @dev This function check if the data belongs of xDAI bridge or AMB/Omnibridge
-    /// @param message for claiming tx
-    /// @param signatures signatures from bridge validators
+    /// @param message bytes to be relayed
+    /// @param signatures signatures to be validated
     function executeSignatures(bytes memory message, bytes memory signatures) external {
         if (message.length == 104) {
             // xdai bridge
-            IForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
+            // should always receive DAI
+            IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
         } else {
             // amb & omnibridge
             IForeignBridge(FOREIGN_AMB).safeExecuteSignaturesWithAutoGasLimit(message, signatures);
         }
     }
 
-    /// @notice Claim function and receive DAI
-    /// @dev Receiver of the token should sign and submit signature to allow peripheral contract swapping Usds to Dai
-    /// @param message data for claiming tx
-    /// @param signatures signatures from bridge validators
-    /// @param permitSignatures permit signature by token receiver
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory permitSignatures, uint256 permitDeadline)
-        external
-    {
-        require(message.length == 104, "invalid message length");
-        address xdaiBridgePeripheral = tokenRoutes[DAI];
-        IXDaiBridgePeripheral(xdaiBridgePeripheral).executeSignaturesAndSwapToDai(
-            message,
-            signatures,
-            permitSignatures,
-            permitDeadline
-        );
+    /// @notice Validates provided signatures and relays a given AMB message.
+    /// @dev  This function is introduced to allow third party applications to switch from calling AMB bridge to Bridge Router contract(this) without changing the function signature
+    /// @param message bytes to be relayed
+    /// @param signatures signatures to be validated
+    function safeExecuteSignaturesWithAutoGasLimit(bytes memory message, bytes memory signatures) external {
+        IForeignBridge(FOREIGN_AMB).safeExecuteSignaturesWithAutoGasLimit(message, signatures);
+    }
+
+
+    /// @notice Claim USDS function
+    /// @dev This function should revert before the xDAI bridge USDS upgrade
+    /// @param message bytes to be relayed
+    /// @param signatures signatures to be validated
+    function executeSignaturesUSDS(bytes memory message, bytes memory signatures) external {
+        if(IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).erc20token() == DAI){
+            // should revert if the bridge is not upgraded to USDS
+            revert ClaimUsdsNotSupported();
+        }
+        else{
+            IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignaturesUSDS(message, signatures);
+        }
     }
 
     /// @notice Allows to transfer any locked token from this contract.

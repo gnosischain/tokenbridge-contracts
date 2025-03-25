@@ -41,34 +41,4 @@ contract XDaiBridgePeripheral {
         IERC20(USDS).approve(FOREIGN_XDAIBRIDGE, amount);
         IForeignBridge(FOREIGN_XDAIBRIDGE).relayTokens(receiver, amount);
     }
-
-    /// @notice claim the USDS token and convert to Dai for user
-    /// @dev receiver should permit this contract to convert Usds to Dai by submitting permitSignature
-    /// @param message data about the claiming tx for `executeSignatures`
-    /// @param signatures signatures from bridge valdiators
-    /// @param permitSignatures signature signed by the receiver of the tx to permit this contract doing the swap action)
-    function executeSignaturesAndSwapToDai(
-        bytes memory message,
-        bytes memory signatures,
-        bytes memory permitSignatures,
-        uint256 permitDeadline
-    ) external onlyRouter {
-        require(message.length == 104, "Invalid data length");
-        IForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
-        address recipient;
-        uint256 amount;
-        bytes32 nonce;
-        address contractAddress;
-        assembly {
-            recipient := mload(add(message, 20))
-            amount := mload(add(message, 52))
-            nonce := mload(add(message, 84))
-            contractAddress := mload(add(message, 104))
-        }
-        IERC20(USDS).permit(recipient, address(this), amount, permitDeadline, permitSignatures);
-        IERC20(USDS).transferFrom(recipient, address(this), amount);
-        IERC20(USDS).approve(DAIUSDS, amount);
-        IDaiUsds(DAIUSDS).usdsToDai(recipient, amount);
-    }
-
 }

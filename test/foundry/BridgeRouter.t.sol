@@ -29,7 +29,7 @@ contract BridgeRouterTest is SetupTest {
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     bytes32 implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
     bytes32 adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
-
+    error ClaimUsdsNotSupported();
 
     function setUp() public payable override {
         super.setUp();
@@ -52,8 +52,6 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(uint160(uint256(implementationSlot))), routerImplAddress, "invalid implementation");
         assertEq(proxyAdmin.owner(), proxyAdminOwner, "invalid proxy admin owner ");
         assertEq(address(uint160(uint256(adminSlot))),address(proxyAdmin), "invalid admin slot");
-        
-        
  
         peripheral = new XDaiBridgePeripheral(address(routerProxy));
         peripheralForDaiPreUsdsUpgrade = new XDaiBridgePeripheralForDaiPreUsdsUpgrade(address(routerProxy));
@@ -318,8 +316,8 @@ contract BridgeRouterTest is SetupTest {
      
     }
 
-        // Should get USDS by default if calling executeSignatures
-       function testFuzzExecuteSignaturePostUpgrade(uint256 amount) public {
+        // Should also get DAI after the upgrade when calling executeSignatures
+       function testFuzzExecuteSignaturesPostUpgrade(uint256 amount) public {
         
         upgradeBrideAndSetupRoute();
         amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
@@ -343,8 +341,8 @@ contract BridgeRouterTest is SetupTest {
         vm.prank(alice);
         router.executeSignatures(messagePost, signaturesPost);
 
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost);
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost + claimAmount);
+        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost);
+        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost + claimAmount);
         assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
         if(bridgeInitialUsdsBalancePost > claimAmount){
              assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePost - claimAmount, "USDS balance of bridge should more than min threshold");
@@ -354,80 +352,15 @@ contract BridgeRouterTest is SetupTest {
 
     }
 
-    function testFuzzExecuteSignatureAndGetDaiPreUpgrade(uint256 amount) public {
+   function testFuzzExecuteSignaturesUSDSPreUpgrade(uint256 amount) public {
 
         amount = bound(amount, 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress) - 10 ether);
         vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
         uint256 claimAmount = amount;
-         
-        uint256 aliceInitialUsdsBalancePre = USDS.balanceOf(alice);
-        uint256 aliceInitialDaiBalancePre = DAI.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePre = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePre = DAI.balanceOf(bridgeAddress);
-
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            bytes32(uint256(20000000)), // nonce
-            bridgeAddress,
-            validatorPk
-        );
-
-        uint256 nonce = USDS.nonces(alice);
-
-        // permitDeadline and permitSignature is not used preUpgrade, but remains in the function parameters for future USDS upgrade compability
-        uint256 permitDeadline = block.timestamp + 1 days;
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                USDS.DOMAIN_SEPARATOR(),
-                keccak256(
-                    abi.encode(
-                        USDS.PERMIT_TYPEHASH(),
-                        alice,
-                        address(peripheral),
-                        amount,
-                        nonce,
-                        permitDeadline
-                    )
-                )
-            )
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, digest);
-        bytes memory permitSignatures = abi.encodePacked(r, s, v);
-
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
-
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePre + claimAmount);
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePre);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePre);
-        if(bridgeInitialDaiBalancePre > claimAmount){
-             assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePre - claimAmount, "DAI balance of bridge should more than min threshold");
-        }else{
-             assertEq(DAI.balanceOf(bridgeAddress), bridge.minCashThreshold(address(DAI)), "DAI balance of bridge should equal to min threshold");
-        }
-
-    }
-
-
-     function testFuzzExecuteSignatureAndGetDaiPostUpgrade(uint256 amount) public {
-        upgradeBrideAndSetupRoute();
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
-        vm.assume(bridge.withinExecutionLimit(amount));
         addMockValidator();
-         
-         uint256 claimAmount = amount;
 
-        uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
-        uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
-
-       
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+        // Pre USDS Upgrade
+        (bytes memory messagePre, bytes memory signaturesPre) = getMessageAndSignatures(
             alice,
             claimAmount,
             bytes32(uint256(20000000)), // nonce
@@ -435,33 +368,38 @@ contract BridgeRouterTest is SetupTest {
             validatorPk
         );
 
-        uint256 nonce = USDS.nonces(alice);
+        vm.prank(alice);
+        vm.expectRevert(ClaimUsdsNotSupported.selector);
+        router.executeSignaturesUSDS(messagePre, signaturesPre);
+    }
 
-        uint256 permitDeadline = block.timestamp + 1 days;
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                USDS.DOMAIN_SEPARATOR(),
-                keccak256(
-                    abi.encode(
-                        USDS.PERMIT_TYPEHASH(),
-                        alice,
-                        address(peripheral),
-                        claimAmount,
-                        nonce,
-                        permitDeadline
-                    )
-                )
-            )
+
+      function testFuzzExecuteSignaturesUSDSPostUpgrade(uint256 amount) public {
+        
+        upgradeBrideAndSetupRoute();
+        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+        vm.assume(bridge.withinExecutionLimit(amount));
+        uint256 claimAmount = amount;
+        addMockValidator();
+    
+        uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
+        uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
+        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
+
+        (bytes memory messagePost, bytes memory signaturesPost) = getMessageAndSignatures(
+            alice,
+            claimAmount,
+            bytes32(uint256(20000001)), // nonce
+            bridgeAddress,
+            validatorPk
         );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, digest);
-        bytes memory permitSignatures = abi.encodePacked(r, s, v);
 
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
+        vm.prank(alice);
+        router.executeSignaturesUSDS(messagePost, signaturesPost);
 
-      
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost + claimAmount);
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost);
+        assertEq(DAI.balanceOf(alice), aliceInitialUsdsBalancePost);
+        assertEq(USDS.balanceOf(alice), aliceInitialDaiBalancePost + claimAmount);
         assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
         if(bridgeInitialUsdsBalancePost > claimAmount){
              assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePost - claimAmount, "USDS balance of bridge should more than min threshold");
@@ -470,109 +408,7 @@ contract BridgeRouterTest is SetupTest {
         }
 
     }
-
-    function testFailExecuteSignatureAndGetDaiwithInvalidDeadlinePostUpgrade(uint256 amount) public {
-        upgradeBrideAndSetupRoute();
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
-        vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
-         
-        bytes32 xdaiBridgeNonce = bytes32(uint256(20000000));
-        uint256 aliceInitialDaiBalance = DAI.balanceOf(alice);
-
-       
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            xdaiBridgeNonce,
-            bridgeAddress,
-            validatorPk
-        );
-
-        uint256 nonce = USDS.nonces(alice);
-
-        uint256 permitDeadline = block.timestamp + 1 days;
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                USDS.DOMAIN_SEPARATOR(),
-                keccak256(
-                    abi.encode(
-                        USDS.PERMIT_TYPEHASH(),
-                        alice,
-                        address(peripheral),
-                        amount,
-                        nonce,
-                        permitDeadline
-                    )
-                )
-            )
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, digest);
-        bytes memory permitSignatures = abi.encodePacked(r, s, v);
-
-
-        teleport(permitDeadline + 1 days);
-
-        vm.expectRevert("Usds/permit-expired");
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
-
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalance + amount);
-
-    }
-
-
-    function testFuzzExecuteSignatureAndGetDaiWithSmartContractWalletPostUpgrade(uint256 amount) public {
-        upgradeBrideAndSetupRoute();
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
-        vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
-
-        MockContractReceiver mockContractReceiver = new MockContractReceiver();
-        uint256 receiverInitialDaiBalance = 1e20;
-
-        deal(address(DAI), address(mockContractReceiver), receiverInitialDaiBalance);
-
-        bytes32 xdaiBridgeNonce = bytes32(uint256(20000000));
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            address(mockContractReceiver),
-            amount,
-            xdaiBridgeNonce,
-            bridgeAddress,
-            validatorPk
-        );
-
-        uint256 nonce = USDS.nonces(address(mockContractReceiver));
-
-        uint256 permitDeadline = block.timestamp + 1 days;
-
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                USDS.DOMAIN_SEPARATOR(),
-                keccak256(
-                    abi.encode(
-                        USDS.PERMIT_TYPEHASH(),
-                        address(mockContractReceiver),
-                        address(peripheral),
-                        amount,
-                        nonce,
-                       permitDeadline
-                    )
-                )
-            )
-        );
-
-        bytes memory permitSignatures = '0x00'; 
-
-        router.executeSignaturesAndSwapToDai(message, signatures, permitSignatures, permitDeadline);
-
-        assertEq(DAI.balanceOf(address(mockContractReceiver)), receiverInitialDaiBalance + amount);
-
-    }
-
+   
     function testRecoverLockedFund(uint256 amount) public{
         vm.assume(amount>0);
         deal(address(USDS), alice, amount);

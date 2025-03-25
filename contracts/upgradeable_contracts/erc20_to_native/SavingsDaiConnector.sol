@@ -10,14 +10,14 @@ import "../../interfaces/ISavingsDai.sol";
  */
 contract SavingsDaiConnector is InterestConnector {
     /**
-     * @dev Tells the address of the DAI token in the Ethereum Mainnet.
+     * @dev Tells the address of the USDS token in the Ethereum Mainnet.
      */
     function daiToken() public pure returns (ERC20) {
         return ERC20(0xdC035D45d973E3EC169d2276DDab16f1e407384F);
     }
 
     /**
-     * @dev Tells the address of the sDAI token in the Ethereum Mainnet.
+     * @dev Tells the address of the sUSDS token in the Ethereum Mainnet.
      */
     function sDaiToken() public pure returns (ISavingsDai) {
         return ISavingsDai(0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD);

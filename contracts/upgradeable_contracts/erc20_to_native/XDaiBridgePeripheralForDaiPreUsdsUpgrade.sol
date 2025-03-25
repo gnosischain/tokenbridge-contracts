@@ -39,15 +39,4 @@ contract XDaiBridgePeripheralForDaiPreUsdsUpgrade {
         IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).relayTokens(receiver, amount);
 
     }
-
-    /// @notice claim DAI and send to recipient
-    /// @dev work as usual executeSignatures function before bridge ugprade
-    /// @param message data about the claiming tx for `executeSignatures`
-    /// @param signatures signatures from bridge valdiators
-    function executeSignaturesAndSwapToDai(bytes memory message, bytes memory signatures, bytes memory, uint256)
-        external
-        onlyRouter
-    {
-        IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
-    }
 }
