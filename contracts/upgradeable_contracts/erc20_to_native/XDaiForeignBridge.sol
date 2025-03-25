@@ -139,7 +139,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         return addressStorage[keccak256(abi.encodePacked("daiUsds"))];
     }
 
-    function setDaiUsds(address _daiUsds) external onlyOwner {
+    function setDaiUsds(address _daiUsds) external onlyIfUpgradeabilityOwner {
         require(_daiUsds != addressStorage[keccak256(abi.encodePacked("daiUsds"))] && _daiUsds != address(0));
         addressStorage[keccak256(abi.encodePacked("daiUsds"))] = _daiUsds;
     }

@@ -45,4 +45,16 @@ Transitional contracts during migration
 ## Modified contracts
 
 1. `SavingsDaiConnector.sol`: `daiToken()` address is changed to USDS address, `sDaiToken()` address is changed to sUSDS address.
-2. `XDaiForeignBridge.sol`: new `swapSDAIToUSDS` function for bridge migration.
+2. `XDaiForeignBridge.sol`: new function introduced
+   1. `swapSDAIToUSDS`: one time function for bridge migration
+   2. `executeSignaturesUSDS`: receive USDS instead of DAI
+   3. `daiUsds`: view function to read the daiUsds contract address
+   4. `setDaiUsds`: set new daiUsds contract address, only callable by owner
+
+# Changes
+
+1. After the migration, xDAI Foreign Bridge take USDS as collateral instead of DAI.
+2. Calling XDaiForeignBridge's executeSignatures and BridgeRouter's executeSignatures will always receive DAI
+3. alling XDaiForeignBridge's executeSignaturesUSDS and BridgeRouter's executeSignaturesUSDS will receive USDS post upgrade, while BridgeRouter's executeSignaturesUSDS will revert pre upgrade.
+
+> User/Third party application should interact with BridgeRouter contract instead of xDAI bridge contract

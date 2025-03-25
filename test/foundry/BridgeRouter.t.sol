@@ -153,8 +153,7 @@ contract BridgeRouterTest is SetupTest {
         
 
         // Pre USDS upgrade
-        // Route for USDS is not set yet, calling router.relayTokens with USDS will result in token locked in router contract
-        // has to call router.recoverLockedFund to get the locked USDS in router contract back
+        // Route for USDS is not set yet, peripheral contract will swap USDS to DAI and send to xDAI Bridge
         uint256 aliceInitialUsdsBalancePre = USDS.balanceOf(alice);
         uint256 bridgeInitialUsdsBalancePre = USDS.balanceOf(bridgeAddress);
         uint256 bridgeInitialDaiBalancePre = DAI.balanceOf(bridgeAddress);
@@ -221,8 +220,6 @@ contract BridgeRouterTest is SetupTest {
 
         assertEq(GNO.balanceOf(alice), aliceInitialGNOBalancePre - amount);
         assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialGNOBalancePre + amount);
-
-
        
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
         upgradeBrideAndSetupRoute();
