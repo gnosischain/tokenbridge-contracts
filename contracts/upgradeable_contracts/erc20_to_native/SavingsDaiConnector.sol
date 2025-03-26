@@ -5,19 +5,23 @@ import "../../interfaces/ISavingsDai.sol";
 
 /**
  * @title SavingsDaiConnector
- * @dev This contract allows to partially deposit locked Dai tokens into the Maker DSR using the sDAI ERC4626 vault. 
- * @dev This must never be deployed standalone and only as an interface to interact with the SavingsDAI from the InterestConnector
+ * @dev After the usds upgrade, this contract deposit locked USDS into Sky's SSR.
+ * @dev The contract and functions name in this contract remains unchanged but the value of daiToken() and sDaiToken() are changed to Usds and sUsds address respectively.
+ * @dev https://forum.gnosis.io/t/gip-118-should-sdai-be-replaced-by-susds-in-the-bridge/9354
+ * @dev This must never be deployed standalone and only as an interface to interact with the sUSDS from the InterestConnector
  */
 contract SavingsDaiConnector is InterestConnector {
     /**
-     * @dev Tells the address of the USDS token in the Ethereum Mainnet.
+     * @dev After the usds upgrade, this function returns the address of the USDS token in the Ethereum Mainnet instead of DAI token address. 
+     * @dev To minimize the changes on the bridge contract itself, the same function name is used but the address is changed. One should be aware when interacting with the contract.
      */
     function daiToken() public pure returns (ERC20) {
         return ERC20(0xdC035D45d973E3EC169d2276DDab16f1e407384F);
     }
 
     /**
-     * @dev Tells the address of the sUSDS token in the Ethereum Mainnet.
+     * @dev After the usds upgrade, this function returns the address of the sUSDS token in the Ethereum Mainnet instead of sDAI token address. 
+     * @dev To minimize the changes on the bridge contract itself, the same function name is used but the address is changed. One should be aware when interacting with the contract.
      */
     function sDaiToken() public pure returns (ISavingsDai) {
         return ISavingsDai(0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD);

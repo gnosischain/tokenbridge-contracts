@@ -6,6 +6,8 @@ import "../GSNForeignERC20Bridge.sol";
 import "../../interfaces/IDaiUsds.sol";
 
 contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSNForeignERC20Bridge {
+    bool public constant IS_USDS_COLLAETERALIZED = true;
+
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -64,8 +66,6 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         uint256 remainDAI = ERC20(DAI).balanceOf(address(this));
         ERC20(DAI).approve(DaiUsds, remainDAI);
         IDaiUsds(DaiUsds).daiToUsds(address(this), remainDAI);
-
-        boolStorage[isUSDSBridgeUpgrade] = true;
         addressStorage[keccak256(abi.encodePacked("daiUsds"))] = DaiUsds;
     }
 
@@ -153,17 +153,15 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
 
         ERC20 token = daiToken();
         ensureEnoughTokens(token, _amount);
+        address daiUsdsAddress = daiUsds();
 
-        if (boolStorage[keccak256("upgrade_DAI_to_USDS")]) {
+        if (IS_USDS_COLLAETERALIZED) {
             // if bridge is upgraded to USDS, swap to DAI and send to recipient
             token.transfer(address(this), _amount);
-            ERC20(IDaiUsds(daiUsds()).usds()).approve(daiUsds(), _amount);
+            ERC20(IDaiUsds(daiUsdsAddress).usds()).approve(daiUsdsAddress, _amount);
             IDaiUsds(daiUsds()).usdsToDai(address(this), _amount);
-            return ERC20(IDaiUsds(daiUsds()).dai()).transfer(_recipient, _amount);
-        } else {
-            return token.transfer(_recipient, _amount);
-        }
-
+            return ERC20(IDaiUsds(daiUsdsAddress).dai()).transfer(_recipient, _amount);
+        } 
     }
 
     function onExecuteMessageUSDS(
@@ -175,19 +173,11 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
 
         ERC20 token = daiToken();
         ensureEnoughTokens(token, _amount);
-        if (boolStorage[keccak256("upgrade_DAI_to_USDS")]) {
+
+        if (IS_USDS_COLLAETERALIZED) {
             // if bridge is upgraded to USDS, send Usds to recipient
             return token.transfer(_recipient, _amount);
-
-        } else {
-            // if bridge is not upgraded to USDS, swap to USDS and send to recipient
-            token.transfer(address(this), _amount);
-            ERC20(IDaiUsds(daiUsds()).dai()).approve(daiUsds(), _amount);
-            IDaiUsds(daiUsds()).daiToUsds(address(this), _amount);
-            return ERC20(IDaiUsds(daiUsds()).usds()).transfer(_recipient, _amount);
-
         }
-
     }
 
     function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {

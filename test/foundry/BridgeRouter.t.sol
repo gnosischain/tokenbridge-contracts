@@ -9,7 +9,6 @@ import { BridgeRouter } from "../../contracts/upgradeable_contracts/erc20_to_nat
 import { XDaiBridgePeripheral } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
 import { XDaiBridgePeripheralForDaiPreUsdsUpgrade } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
 import { XDaiBridgePeripheralForUsdsPreUsdsUpgrade } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
-import { MockContractReceiver } from "../../contracts/mocks/MockContractReceiver.sol";
 import { IOmnibridge } from "./interfaces/IOmnibridge.sol";
 import { SetupTest } from "./Setup.t.sol";
 
