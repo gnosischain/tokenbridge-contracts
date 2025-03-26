@@ -159,7 +159,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
             // if bridge is upgraded to USDS, swap to DAI and send to recipient
             token.transfer(address(this), _amount);
             ERC20(IDaiUsds(daiUsdsAddress).usds()).approve(daiUsdsAddress, _amount);
-            IDaiUsds(daiUsds()).usdsToDai(address(this), _amount);
+            IDaiUsds(daiUsdsAddress).usdsToDai(address(this), _amount);
             return ERC20(IDaiUsds(daiUsdsAddress).dai()).transfer(_recipient, _amount);
         } 
     }
