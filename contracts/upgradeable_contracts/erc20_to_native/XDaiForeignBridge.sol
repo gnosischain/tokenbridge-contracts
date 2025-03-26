@@ -6,7 +6,10 @@ import "../GSNForeignERC20Bridge.sol";
 import "../../interfaces/IDaiUsds.sol";
 
 contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSNForeignERC20Bridge {
-    bool public constant IS_USDS_COLLAETERALIZED = true;
+    bool public constant IS_USDS_COLLATERALIZED = true;
+    address public constant DAI_USDS = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
+    address public  constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
 
     function initialize(
         address _validatorContract,
@@ -52,8 +55,6 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         require(!boolStorage[isUSDSBridgeUpgrade], "USDS bridge ugprade completed");
 
         address sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
-        address DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-        address DaiUsds = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
 
         // withdraw all sDAI into DAI
         uint256 maxWithdrawable = ISavingsDai(sDAI).maxWithdraw(address(this));
@@ -64,13 +65,13 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
 
         // swap DAI -> USDS
         uint256 remainDAI = ERC20(DAI).balanceOf(address(this));
-        ERC20(DAI).approve(DaiUsds, remainDAI);
-        IDaiUsds(DaiUsds).daiToUsds(address(this), remainDAI);
-        addressStorage[keccak256(abi.encodePacked("daiUsds"))] = DaiUsds;
+        ERC20(DAI).approve(DAI_USDS, remainDAI);
+        IDaiUsds(DAI_USDS).daiToUsds(address(this), remainDAI);
+        boolStorage[isUSDSBridgeUpgrade] = true;
     }
 
     /**
-     * @dev Withdraws DAI from sDAI vault to the bridge up to min cash threshold
+     * @dev Withdraws USDS from sUSDS vault to the bridge up to min cash threshold
      */
     function refillBridge() external {
         uint256 currentBalance = daiToken().balanceOf(address(this));
@@ -81,7 +82,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     }
 
     /**
-     * @dev Invests the DAI into the sDAI Vault.
+     * @dev Invests the USDS into the sUSDS Vault.
      */
     function investDai() external {
         invest(address(daiToken()));
@@ -132,16 +133,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      * @param _to address of the tokens/coins receiver.
      */
     function recoverLegacyTransfer(address _to) external onlyIfUpgradeabilityOwner {
-        claimValues(address(daiToken()), _to);
-    }
-
-    function daiUsds() public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("daiUsds"))];
-    }
-
-    function setDaiUsds(address _daiUsds) external onlyIfUpgradeabilityOwner {
-        require(_daiUsds != addressStorage[keccak256(abi.encodePacked("daiUsds"))] && _daiUsds != address(0));
-        addressStorage[keccak256(abi.encodePacked("daiUsds"))] = _daiUsds;
+        claimValues(DAI, _to);
     }
 
     function onExecuteMessage(
@@ -153,14 +145,13 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
 
         ERC20 token = daiToken();
         ensureEnoughTokens(token, _amount);
-        address daiUsdsAddress = daiUsds();
 
-        if (IS_USDS_COLLAETERALIZED) {
+        if (IS_USDS_COLLATERALIZED) {
             // if bridge is upgraded to USDS, swap to DAI and send to recipient
             token.transfer(address(this), _amount);
-            ERC20(IDaiUsds(daiUsdsAddress).usds()).approve(daiUsdsAddress, _amount);
-            IDaiUsds(daiUsdsAddress).usdsToDai(address(this), _amount);
-            return ERC20(IDaiUsds(daiUsdsAddress).dai()).transfer(_recipient, _amount);
+            ERC20(USDS).approve(DAI_USDS, _amount);
+            IDaiUsds(DAI_USDS).usdsToDai(address(this), _amount);
+            return ERC20(DAI).transfer(_recipient, _amount);
         } 
     }
 
@@ -174,7 +165,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         ERC20 token = daiToken();
         ensureEnoughTokens(token, _amount);
 
-        if (IS_USDS_COLLAETERALIZED) {
+        if (IS_USDS_COLLATERALIZED) {
             // if bridge is upgraded to USDS, send Usds to recipient
             return token.transfer(_recipient, _amount);
         }
