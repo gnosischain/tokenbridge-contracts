@@ -88,8 +88,8 @@ contract SetupTest is Test {
 
     function upgradeAndInitializeInterest() public {
         uint256 initialVersion = bridgeProxy.version();
-        uint256 minCashThresholdForUsds =  bridge.minCashThreshold(address(DAI));
-        uint256 minInterestPaidForUsds =  bridge.minInterestPaid(address(DAI));
+        uint256 minCashThresholdForUsds = bridge.minCashThreshold(address(DAI));
+        uint256 minInterestPaidForUsds = bridge.minInterestPaid(address(DAI));
 
         vm.startPrank(proxyOwner);
 
@@ -98,18 +98,14 @@ contract SetupTest is Test {
         assertEq(address(newImpl), bridgeProxy.implementation());
         console.log("upgraded bridge to version %s", initialVersion + 1);
 
-   
         // disable interested for DAI and swap sDAI -> sUSDS
         bridge.swapSDAIToUSDS();
         bridge.initializeInterest(
-            address(USDS),
-            minCashThresholdForUsds,
-            minInterestPaidForUsds,
-            gnosisInterestReceiver
+            address(USDS), minCashThresholdForUsds, minInterestPaidForUsds, gnosisInterestReceiver
         );
         bridge.invest(address(USDS));
-        assertEq( bridge.minCashThreshold(address(DAI)), 0, "minCashThreshodl fro DAI mismatch");
-        assertEq( bridge.minInterestPaid(address(DAI)),0, "minInterestPaid fro DAI mismatch");
+        assertEq(bridge.minCashThreshold(address(DAI)), 0, "minCashThreshodl fro DAI mismatch");
+        assertEq(bridge.minInterestPaid(address(DAI)), 0, "minInterestPaid fro DAI mismatch");
 
         vm.stopPrank();
     }

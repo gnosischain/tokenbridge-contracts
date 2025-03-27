@@ -69,7 +69,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(router.tokenRoutes(address(DAI)), address(peripheralForDaiPreUsdsUpgrade));
         assertEq(router.tokenRoutes(address(USDS)), address(peripheralForUsdsPreUsdsUpgrade));
 
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
 
         // Post USDS bridge upgrade
         assertEq(router.tokenRoutes(address(DAI)), address(peripheral));
@@ -77,7 +77,7 @@ contract BridgeRouterTest is SetupTest {
     }
 
     function testRouterUpgrade() public {
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
         BridgeRouter newRouterImpl = new BridgeRouter();
 
         vm.prank(bridgeOwner);
@@ -120,7 +120,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePre);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
         // Post USDS Upgrade
 
         uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
@@ -167,7 +167,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(DAI.balanceOf(address(router)), routerInitialDaiBalancePre);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
 
         uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
         uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
@@ -209,7 +209,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialGNOBalancePre + amount);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
 
         // Post USDS upgrade
         uint256 aliceInitialGNOBalancePost = GNO.balanceOf(alice);
@@ -245,7 +245,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialBalancePre + amount);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
 
         // Post USDS upgrade
 
@@ -303,7 +303,7 @@ contract BridgeRouterTest is SetupTest {
 
     // Should also get DAI after the upgrade when calling executeSignatures
     function testFuzzExecuteSignaturesPostUpgrade(uint256 amount) public {
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
         amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
         vm.assume(bridge.withinExecutionLimit(amount));
         uint256 claimAmount = amount;
@@ -364,7 +364,7 @@ contract BridgeRouterTest is SetupTest {
     }
 
     function testFuzzExecuteSignaturesUSDSPostUpgrade(uint256 amount) public {
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
         amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
         vm.assume(bridge.withinExecutionLimit(amount));
         uint256 claimAmount = amount;
@@ -443,7 +443,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(alice.balance, amount);
         assertEq(address(router).balance, 0);
 
-        upgradeBrideAndSetupRoute();
+        upgradeBridgeAndSetupRoute();
         // Post USDS Upgrade
         // Works as the same as pre USDS upgrade
 
@@ -479,7 +479,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(router).balance, 0);
     }
 
-    function upgradeBrideAndSetupRoute() public {
+    function upgradeBridgeAndSetupRoute() public {
         vm.startPrank(bridgeOwner);
         router.setRoute(address(DAI), address(peripheral));
         router.setRoute(address(USDS), FOREIGN_XDAIBRIDGE);
