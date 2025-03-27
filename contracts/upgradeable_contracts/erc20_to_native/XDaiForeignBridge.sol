@@ -62,6 +62,8 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         // disableInterest for DAI
         _setInvestedAmount(DAI, 0);
         _setInterestEnabled(DAI, false);
+        _setMinCashThreshold(DAI, 0);
+        _setMinInterestPaid(DAI, 0);
 
         // swap DAI -> USDS
         uint256 remainDAI = ERC20(DAI).balanceOf(address(this));
