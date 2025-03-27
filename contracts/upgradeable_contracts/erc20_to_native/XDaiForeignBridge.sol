@@ -8,7 +8,7 @@ import "../../interfaces/IDaiUsds.sol";
 contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSNForeignERC20Bridge {
     bool public constant IS_USDS_COLLATERALIZED = true;
     address public constant DAI_USDS = 0x3225737a9Bbb6473CB4a45b7244ACa2BeFdB276A;
-    address public  constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
 
     function initialize(
@@ -104,10 +104,10 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     }
 
     /**
-    * @dev Validates provided signatures and relays a given message, recipient should receive USDS 
-    * @param message bytes to be relayed
-    * @param signatures bytes blob with signatures to be validated
-    */
+     * @dev Validates provided signatures and relays a given message, recipient should receive USDS
+     * @param message bytes to be relayed
+     * @param signatures bytes blob with signatures to be validated
+     */
     function executeSignaturesUSDS(bytes message, bytes signatures) external {
         Message.hasEnoughValidSignatures(message, signatures, validatorContract(), false);
 
@@ -134,15 +134,12 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      * @dev Withdraws the DAI tokens if they are mistakenly sent to this contract after the Hashi integration, as the Transfer event will no longer be supported.
      * @param _to address of the tokens/coins receiver.
      */
+
     function recoverLegacyTransfer(address _to) external onlyIfUpgradeabilityOwner {
         claimValues(DAI, _to);
     }
 
-    function onExecuteMessage(
-        address _recipient,
-        uint256 _amount,
-        bytes32 /*_nonce*/
-    ) internal returns (bool) {
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
         ERC20 token = daiToken();
@@ -154,14 +151,12 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
             ERC20(USDS).approve(DAI_USDS, _amount);
             IDaiUsds(DAI_USDS).usdsToDai(address(this), _amount);
             return ERC20(DAI).transfer(_recipient, _amount);
-        } 
+        } else {
+            ERC20(DAI).transfer(_recipient, _amount);
+        }
     }
 
-    function onExecuteMessageUSDS(
-        address _recipient,
-        uint256 _amount,
-        bytes32 /*_nonce*/
-    ) internal returns (bool) {
+    function onExecuteMessageUSDS(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
         ERC20 token = daiToken();
@@ -170,6 +165,8 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         if (IS_USDS_COLLATERALIZED) {
             // if bridge is upgraded to USDS, send Usds to recipient
             return token.transfer(_recipient, _amount);
+        } else {
+            revert();
         }
     }
 
