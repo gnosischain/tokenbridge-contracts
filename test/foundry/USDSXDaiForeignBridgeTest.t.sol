@@ -44,7 +44,6 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertTrue(bridge.isInterestEnabled(address(USDS)));
 
         vm.stopPrank();
-
     }
 
     function testMetadata() public {
@@ -57,9 +56,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(bridge.daiToken(), address(USDS));
         assertEq(bridge.sDaiToken(), address(sUSDS));
         assertEq(bridge.erc20token(), address(USDS));
-
     }
-
 
     function testFuzzRelayTokens(uint256 amount) public {
         upgradeAndInitializeInterest();
@@ -78,7 +75,6 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         vm.stopPrank();
 
         assertEq(USDS.balanceOf(alice), aliceBalanceBefore - amount);
-
     }
 
     function testFuzzRelayTokensWithDai(uint256 amount) public {
@@ -280,49 +276,36 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         if (amount <= minCasThreshold) {
             // should not call refill bridge
 
-            (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-                alice,
-                amount,
-                nonce,
-                bridgeAddress,
-                validatorPk
-            );
+            (bytes memory message, bytes memory signatures) =
+                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
             vm.prank(alice);
             vm.expectEmit(bridgeAddress);
             emit RelayedMessage(alice, amount, nonce);
             bridge.executeSignatures(message, signatures);
             assertEq(USDS.balanceOf(bridgeAddress), initialBridgeBalance - amount);
-
         } else {
             // Case 2: amount > minCashThreshold
             // expect not enough balance
             // need to call refillBridge
 
-            (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-                alice,
-                amount,
-                nonce,
-                bridgeAddress,
-                validatorPk
-            );
+            (bytes memory message, bytes memory signatures) =
+                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
             vm.prank(alice);
             vm.expectEmit(bridgeAddress);
             emit RelayedMessage(alice, amount, nonce);
             bridge.executeSignatures(message, signatures);
             assertEq(USDS.balanceOf(bridgeAddress), bridge.minCashThreshold(address(USDS)));
-
         }
         // after upgrade
         // should also receive DAI when calling executeSignatures
-        assertEq(DAI.balanceOf(alice), initialAliceBalance + amount,  "Alice should receive DAI");
+        assertEq(DAI.balanceOf(alice), initialAliceBalance + amount, "Alice should receive DAI");
         assertEq(USDS.balanceOf(alice), initialAliceDAIBalance, "Alice should not receive USDS");
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
-
     }
 
-        function testExecuteSignaturesUSDS(uint256 amount) public {
+    function testExecuteSignaturesUSDS(uint256 amount) public {
         // after upgrade, should receive USDS
         upgradeAndInitializeInterest();
         addMockValidator();
@@ -342,45 +325,32 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         if (amount <= minCasThreshold) {
             // should not call refill bridge
 
-            (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-                alice,
-                amount,
-                nonce,
-                bridgeAddress,
-                validatorPk
-            );
+            (bytes memory message, bytes memory signatures) =
+                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
             vm.prank(alice);
             vm.expectEmit(bridgeAddress);
             emit RelayedMessage(alice, amount, nonce);
             bridge.executeSignaturesUSDS(message, signatures);
             assertEq(USDS.balanceOf(bridgeAddress), initialBridgeBalance - amount);
-
         } else {
             // Case 2: amount > minCashThreshold
             // expect not enough balance
             // need to call refillBridge
 
-            (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-                alice,
-                amount,
-                nonce,
-                bridgeAddress,
-                validatorPk
-            );
+            (bytes memory message, bytes memory signatures) =
+                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
             vm.prank(alice);
             vm.expectEmit(bridgeAddress);
             emit RelayedMessage(alice, amount, nonce);
             bridge.executeSignaturesUSDS(message, signatures);
             assertEq(USDS.balanceOf(bridgeAddress), bridge.minCashThreshold(address(USDS)));
-
         }
 
         assertEq(USDS.balanceOf(alice), initialAliceBalance + amount, "Alice should receive USDS");
         assertEq(DAI.balanceOf(alice), initialAliceDAIBalance, "Alice should not receive DAI");
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
-
     }
 
     function testRelayDAIAndClaimBack(uint256 amount) public {
@@ -408,7 +378,6 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         bridge.claimTokens(address(DAI), alice);
 
         assertEq(DAI.balanceOf(alice), initialAliceDAIBalance);
-
     }
 
     function testInvalidInterestReceiver() public {
@@ -417,7 +386,5 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         vm.prank(bridgeOwner);
         vm.expectRevert("Receiver can't be the Bridge"); // this error is obsolete because _relayInterest is used, instead of _transferInterest
         bridge.setInterestReceiver(address(USDS), bridgeAddress);
-
     }
-
 }

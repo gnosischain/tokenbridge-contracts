@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/interfaces/IERC20.sol";
-import { IUSDS } from "./interfaces/IUSDS.sol";
-import { ISavingsDai } from "./interfaces/ISavingsDai.sol";
-import { IEternalStorageProxy } from "./interfaces/IEternalStorageProxy.sol";
-import { IXDaiForeignBridge } from "./interfaces/IXDaiForeignBridge.sol";
-import { IBridgeValidators } from "./interfaces/IBridgeValidators.sol";
+import {IUSDS} from "./interfaces/IUSDS.sol";
+import {ISavingsDai} from "./interfaces/ISavingsDai.sol";
+import {IEternalStorageProxy} from "./interfaces/IEternalStorageProxy.sol";
+import {IXDaiForeignBridge} from "./interfaces/IXDaiForeignBridge.sol";
+import {IBridgeValidators} from "./interfaces/IBridgeValidators.sol";
 
 contract SetupTest is Test {
     address public initializer = 0x1B572dBCBBDA53e2A900D00d39c67292288E97c8;
@@ -71,7 +71,6 @@ contract SetupTest is Test {
         vm.deal(proxyOwner, 100 ether);
         vm.deal(alice, 10000 ether);
         vm.deal(bob, 100000 ether);
-
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -189,5 +188,4 @@ contract SetupTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, hashedMessage);
         signatures = abi.encodePacked(uint8(1), v, r, s);
     }
-
 }

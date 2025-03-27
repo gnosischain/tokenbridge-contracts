@@ -1,9 +1,11 @@
 pragma solidity ^0.8.0;
 
-import { XDaiBridgePeripheral } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
-import { XDaiBridgePeripheralForDaiPreUsdsUpgrade } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
-import { XDaiBridgePeripheralForUsdsPreUsdsUpgrade } from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
-import { SetupTest } from "./Setup.t.sol";
+import {XDaiBridgePeripheral} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
+import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from
+    "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
+import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from
+    "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
+import {SetupTest} from "./Setup.t.sol";
 import "forge-std/console.sol";
 
 contract PeripheralTest is SetupTest {
@@ -17,8 +19,6 @@ contract PeripheralTest is SetupTest {
         peripheral = new XDaiBridgePeripheral(address(router));
         peripheralForDaiPreUsdsUpgrade = new XDaiBridgePeripheralForDaiPreUsdsUpgrade(address(router));
         peripheralForUsdsPreUsdsUpgrade = new XDaiBridgePeripheralForUsdsPreUsdsUpgrade(address(router));
-
-
     }
 
     function testFailIfNotFromRouter() public {
@@ -32,7 +32,7 @@ contract PeripheralTest is SetupTest {
 
         vm.expectRevert("revert: only Router");
         peripheralForUsdsPreUsdsUpgrade.relayTokens(makeAddr("token"), amount);
-        
+
         vm.stopPrank();
     }
 }

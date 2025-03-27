@@ -5,11 +5,7 @@ interface ISavingsDai {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Withdraw(
-        address indexed sender,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
