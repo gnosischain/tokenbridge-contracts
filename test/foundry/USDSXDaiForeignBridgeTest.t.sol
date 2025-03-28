@@ -58,7 +58,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(bridge.erc20token(), address(USDS));
     }
 
-    function testFuzzRelayTokens(uint256 amount) public {
+    function testFuzzRelayTokensWithUsds(uint256 amount) public {
         upgradeAndInitializeInterest();
 
         amount = bound(amount, bridge.minPerTx(), bridge.maxPerTx() - 1);
