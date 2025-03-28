@@ -257,7 +257,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(afterBalance, initialBalance + amount);
     }
 
-    function testExecuteSignatures(uint256 amount) public {
+    function testFuzzExecuteSignatures(uint256 amount) public {
         upgradeAndInitializeInterest();
         addMockValidator();
 
@@ -305,7 +305,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
     }
 
-    function testExecuteSignaturesUSDS(uint256 amount) public {
+    function testFuzzExecuteSignaturesUSDS(uint256 amount) public {
         // after upgrade, should receive USDS
         upgradeAndInitializeInterest();
         addMockValidator();
@@ -353,7 +353,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
     }
 
-    function testRelayDAIAndClaimBack(uint256 amount) public {
+    function testFuzzRelayDAIAndClaimBack(uint256 amount) public {
         upgradeAndInitializeInterest();
         // transfer DAI
         amount = bound(amount, bridge.minPerTx(), bridge.minPerTx());

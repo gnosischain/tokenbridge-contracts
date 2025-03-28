@@ -386,8 +386,8 @@ contract BridgeRouterTest is SetupTest {
         vm.prank(alice);
         router.executeSignaturesUSDS(messagePost, signaturesPost);
 
-        assertEq(DAI.balanceOf(alice), aliceInitialUsdsBalancePost);
-        assertEq(USDS.balanceOf(alice), aliceInitialDaiBalancePost + claimAmount);
+        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost);
+        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost + claimAmount);
         assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
         if (bridgeInitialUsdsBalancePost > claimAmount) {
             assertEq(
