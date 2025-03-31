@@ -8,7 +8,7 @@ interface IDaiUsds {
     function usdsToDai(address usr, uint256 wad) external;
 }
 
-/// @title XdaiBridgePeripheral
+/// @title XDaiBridgePeripheral
 /// @author Gnosis Chain's bridge team
 /// @notice A peripheral contract to allow user to deposit DAI, convert it into USDS and call XDai Bridge relayTokens
 /// @dev This contract is non upgradeable and only callable by BridgeRouter contract

@@ -36,8 +36,8 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
 
         assertGt(sUSDS.balanceOf(bridgeAddress), bridgeSDAIBalance); // chi_sUSDS < chi_sDAI
         assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold);
-        assertEq(sDAI.maxWithdraw(bridgeAddress), 0); //disabled interested
-        assertEq(DAI.balanceOf(bridgeAddress), 0); //disabled interested
+        assertEq(sDAI.maxWithdraw(bridgeAddress), 0); //disabled interest
+        assertEq(DAI.balanceOf(bridgeAddress), 0); //disabled interest
 
         // Check if USDS initialize
         assertFalse(bridge.isInterestEnabled(address(DAI)));
@@ -58,14 +58,14 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(bridge.erc20token(), address(USDS));
     }
 
-    function testFuzzRelayTokensWithUsds(uint256 amount) public {
+    function testFuzzRelayTokensWithUSDS(uint256 amount) public {
         upgradeAndInitializeInterest();
 
         amount = bound(amount, bridge.minPerTx(), bridge.maxPerTx() - 1);
         vm.assume(bridge.withinLimit(amount) == true);
         deal(address(USDS), alice, amount);
 
-        uint256 aliceBalanceBefore = USDS.balanceOf(alice);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
 
         vm.startPrank(alice);
 
@@ -74,7 +74,7 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(USDS.balanceOf(alice), aliceBalanceBefore - amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance - amount);
     }
 
     function testFuzzRelayTokensWithDai(uint256 amount) public {
@@ -118,7 +118,6 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         uint256 afterCollectable = bridge.interestAmount(address(USDS));
 
         assertEq(afterBalance, initialBalance);
-        assertGt(afterInvested, initialInvested);
         assertEq(afterInvested, initialInvested + amount);
         assertGt(afterCollectable, initialCollectable);
     }
@@ -192,8 +191,8 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
 
         uint256 afterBalance = USDS.balanceOf(bridgeAddress);
         uint256 afterInvested = bridge.investedAmount(token);
-        uint256 afterCollectable = bridge.interestAmount(token); // what is the difference?
-        uint256 afterWithdrawable = bridge.previewWithdraw(token, afterInvested); // what is the difference?
+        uint256 afterCollectable = bridge.interestAmount(token);
+        uint256 afterWithdrawable = bridge.previewWithdraw(token, afterInvested);
         if (initialInvested > 0) {
             assertGt(afterBalance, initialBalance);
             assertEq(afterBalance, initialBalance + initialInvested);
@@ -257,106 +256,128 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(afterBalance, initialBalance + amount);
     }
 
-    function testFuzzExecuteSignatures(uint256 amount) public {
+    function testFuzzExecuteSignaturesPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
         upgradeAndInitializeInterest();
         addMockValidator();
 
         bytes32 nonce = bytes32(uint256(20000000));
 
-        uint256 initialAliceBalance = USDS.balanceOf(alice);
-        uint256 initialBridgeBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
         uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
         uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
-        uint256 minCasThreshold = bridge.minCashThreshold(address(USDS));
 
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalance);
         vm.assume(bridge.withinExecutionLimit(amount));
 
-        // Case 1: amount < minCashThreshold
-        if (amount <= minCasThreshold) {
-            // should not call refill bridge
+        (bytes memory message, bytes memory signatures) =
+            getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
-            (bytes memory message, bytes memory signatures) =
-                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
+        vm.prank(alice);
+        vm.expectEmit(bridgeAddress);
+        emit RelayedMessage(alice, amount, nonce);
+        bridge.executeSignatures(message, signatures);
 
-            vm.prank(alice);
-            vm.expectEmit(bridgeAddress);
-            emit RelayedMessage(alice, amount, nonce);
-            bridge.executeSignatures(message, signatures);
-            assertEq(USDS.balanceOf(bridgeAddress), initialBridgeBalance - amount);
-        } else {
-            // Case 2: amount > minCashThreshold
-            // expect not enough balance
-            // need to call refillBridge
-
-            (bytes memory message, bytes memory signatures) =
-                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
-
-            vm.prank(alice);
-            vm.expectEmit(bridgeAddress);
-            emit RelayedMessage(alice, amount, nonce);
-            bridge.executeSignatures(message, signatures);
-            assertEq(USDS.balanceOf(bridgeAddress), bridge.minCashThreshold(address(USDS)));
-        }
-        // after upgrade
-        // should also receive DAI when calling executeSignatures
-        assertEq(DAI.balanceOf(alice), initialAliceBalance + amount, "Alice should receive DAI");
-        assertEq(USDS.balanceOf(alice), initialAliceDAIBalance, "Alice should not receive USDS");
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount, "Alice should receive DAI");
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance, "Alice should not receive USDS");
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalance - amount);
     }
 
-    function testFuzzExecuteSignaturesUSDS(uint256 amount) public {
-        // after upgrade, should receive USDS
+    function testFuzzExecuteSignaturesPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
         upgradeAndInitializeInterest();
         addMockValidator();
 
         bytes32 nonce = bytes32(uint256(20000000));
 
-        uint256 initialAliceBalance = USDS.balanceOf(alice);
-        uint256 initialBridgeBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
         uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
         uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
-        uint256 minCasThreshold = bridge.minCashThreshold(address(USDS));
+        uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
 
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+        amount = bound(
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
         vm.assume(bridge.withinExecutionLimit(amount));
 
-        // Case 1: amount < minCashThreshold
-        if (amount <= minCasThreshold) {
-            // should not call refill bridge
+        (bytes memory message, bytes memory signatures) =
+            getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
 
-            (bytes memory message, bytes memory signatures) =
-                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
+        vm.prank(alice);
+        vm.expectEmit(bridgeAddress);
+        emit RelayedMessage(alice, amount, nonce);
+        bridge.executeSignatures(message, signatures);
 
-            vm.prank(alice);
-            vm.expectEmit(bridgeAddress);
-            emit RelayedMessage(alice, amount, nonce);
-            bridge.executeSignaturesUSDS(message, signatures);
-            assertEq(USDS.balanceOf(bridgeAddress), initialBridgeBalance - amount);
-        } else {
-            // Case 2: amount > minCashThreshold
-            // expect not enough balance
-            // need to call refillBridge
-
-            (bytes memory message, bytes memory signatures) =
-                getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
-
-            vm.prank(alice);
-            vm.expectEmit(bridgeAddress);
-            emit RelayedMessage(alice, amount, nonce);
-            bridge.executeSignaturesUSDS(message, signatures);
-            assertEq(USDS.balanceOf(bridgeAddress), bridge.minCashThreshold(address(USDS)));
-        }
-
-        assertEq(USDS.balanceOf(alice), initialAliceBalance + amount, "Alice should receive USDS");
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance, "Alice should not receive DAI");
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount, "Alice should receive DAI");
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance, "Alice should not receive USDS");
         assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
+        assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold, "Bridge should have minCashThreshold of USDS");
+    }
+
+    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
+        upgradeAndInitializeInterest();
+        addMockValidator();
+
+        bytes32 nonce = bytes32(uint256(20000000));
+
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalance);
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) =
+            getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
+
+        vm.prank(alice);
+        vm.expectEmit(bridgeAddress);
+        emit RelayedMessage(alice, amount, nonce);
+        bridge.executeSignaturesUSDS(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance, "Alice should receive DAI");
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance + amount, "Alice should not receive USDS");
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalance - amount);
+    }
+
+    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
+        upgradeAndInitializeInterest();
+        addMockValidator();
+
+        bytes32 nonce = bytes32(uint256(20000000));
+
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
+        uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
+
+        amount = bound(
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) =
+            getMessageAndSignatures(alice, amount, nonce, bridgeAddress, validatorPk);
+
+        vm.prank(alice);
+        vm.expectEmit(bridgeAddress);
+        emit RelayedMessage(alice, amount, nonce);
+        bridge.executeSignaturesUSDS(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance, "Alice should receive DAI");
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance + amount, "Alice should not receive USDS");
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "Bridge should have the same DAI balance");
+        assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold, "Bridge should have minCashThreshold of USDS");
     }
 
     function testFuzzRelayDAIAndClaimBack(uint256 amount) public {
         upgradeAndInitializeInterest();
         // transfer DAI
-        amount = bound(amount, bridge.minPerTx(), bridge.minPerTx());
+        amount = bound(amount, bridge.minPerTx(), bridge.maxPerTx() - 1);
         vm.assume(bridge.withinLimit(amount));
         deal(address(DAI), alice, amount);
 

@@ -1,12 +1,12 @@
 pragma solidity ^0.8.0;
 
+import "forge-std/console.sol";
+import {SetupTest} from "./Setup.t.sol";
 import {XDaiBridgePeripheral} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
 import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from
     "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
 import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from
     "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
-import {SetupTest} from "./Setup.t.sol";
-import "forge-std/console.sol";
 
 contract PeripheralTest is SetupTest {
     XDaiBridgePeripheral peripheral;

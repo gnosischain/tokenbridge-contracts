@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {SetupTest} from "./Setup.t.sol";
 import {BridgeRouter} from "../../contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol";
 import {XDaiBridgePeripheral} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
 import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from
@@ -15,13 +16,12 @@ import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from
 import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from
     "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
 import {IOmnibridge} from "./interfaces/IOmnibridge.sol";
-import {SetupTest} from "./Setup.t.sol";
 
 contract BridgeRouterTest is SetupTest {
     BridgeRouter router;
     XDaiBridgePeripheral peripheral;
-    XDaiBridgePeripheralForDaiPreUsdsUpgrade peripheralForDaiPreUsdsUpgrade;
-    XDaiBridgePeripheralForUsdsPreUsdsUpgrade peripheralForUsdsPreUsdsUpgrade;
+    XDaiBridgePeripheralForDaiPreUsdsUpgrade peripheralForDAIPreUSDSUpgrade;
+    XDaiBridgePeripheralForUsdsPreUsdsUpgrade peripheralForUSDSPreUSDSUpgrade;
     TransparentUpgradeableProxy routerProxy;
     ProxyAdmin proxyAdmin;
     address proxyAdminOwner = makeAddr("proxyAdminOwner");
@@ -55,19 +55,19 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(uint160(uint256(adminSlot))), address(proxyAdmin), "invalid admin slot");
 
         peripheral = new XDaiBridgePeripheral(address(routerProxy));
-        peripheralForDaiPreUsdsUpgrade = new XDaiBridgePeripheralForDaiPreUsdsUpgrade(address(routerProxy));
-        peripheralForUsdsPreUsdsUpgrade = new XDaiBridgePeripheralForUsdsPreUsdsUpgrade(address(routerProxy));
+        peripheralForDAIPreUSDSUpgrade = new XDaiBridgePeripheralForDaiPreUsdsUpgrade(address(routerProxy));
+        peripheralForUSDSPreUSDSUpgrade = new XDaiBridgePeripheralForUsdsPreUsdsUpgrade(address(routerProxy));
 
         vm.startPrank(bridgeOwner);
-        router.setRoute(address(DAI), address(peripheralForDaiPreUsdsUpgrade));
-        router.setRoute(address(USDS), address(peripheralForUsdsPreUsdsUpgrade));
+        router.setRoute(address(DAI), address(peripheralForDAIPreUSDSUpgrade));
+        router.setRoute(address(USDS), address(peripheralForUSDSPreUSDSUpgrade));
         vm.stopPrank();
     }
 
     function testRouterMetadata() public {
         // Pre USDS bridge upgrade
-        assertEq(router.tokenRoutes(address(DAI)), address(peripheralForDaiPreUsdsUpgrade));
-        assertEq(router.tokenRoutes(address(USDS)), address(peripheralForUsdsPreUsdsUpgrade));
+        assertEq(router.tokenRoutes(address(DAI)), address(peripheralForDAIPreUSDSUpgrade));
+        assertEq(router.tokenRoutes(address(USDS)), address(peripheralForUSDSPreUSDSUpgrade));
 
         upgradeBridgeAndSetupRoute();
 
@@ -96,7 +96,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(uint160(uint256(implementationSlot))), address(newRouterImpl), "invalid implementation");
     }
 
-    function testFuzzRelayDaiToken(uint256 amount) public {
+    function testFuzzRelayDAIToken(uint256 amount) public {
         amount = bound(amount, bridge.minPerTx(), bridge.maxPerTx());
         vm.assume(bridge.withinLimit(amount));
 
@@ -104,9 +104,9 @@ contract BridgeRouterTest is SetupTest {
 
         // Pre USDS Upgrade
 
-        uint256 aliceInitialDaiBalancePre = DAI.balanceOf(alice);
-        uint256 bridgeInitialDaiBalancePre = DAI.balanceOf(bridgeAddress);
-        uint256 bridgeInitialUsdsBalancePre = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceDAIBalancePre = DAI.balanceOf(alice);
+        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
+        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
 
         vm.startPrank(alice);
 
@@ -115,17 +115,17 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePre - amount);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePre + amount);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePre);
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePre - amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePre + amount);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
         upgradeBridgeAndSetupRoute();
         // Post USDS Upgrade
 
-        uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
-        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
-        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
 
         vm.startPrank(alice);
 
@@ -134,9 +134,9 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost - amount);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePost + amount);
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost - amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost + amount);
     }
 
     function testFuzzRelayUSDSToken(uint256 amount) public {
@@ -147,11 +147,11 @@ contract BridgeRouterTest is SetupTest {
 
         // Pre USDS upgrade
         // Route for USDS is not set yet, peripheral contract will swap USDS to DAI and send to xDAI Bridge
-        uint256 aliceInitialUsdsBalancePre = USDS.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePre = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePre = DAI.balanceOf(bridgeAddress);
-        uint256 routerInitialUsdsBalancePre = USDS.balanceOf(address(router));
-        uint256 routerInitialDaiBalancePre = DAI.balanceOf(address(router));
+        uint256 initialAliceUSDSBalancePre = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
+        uint256 routerInitialUSDSBalancePre = USDS.balanceOf(address(router));
+        uint256 routerInitialDAIBalancePre = DAI.balanceOf(address(router));
 
         vm.startPrank(alice);
 
@@ -160,20 +160,20 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePre - amount);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePre);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePre + amount);
-        assertEq(USDS.balanceOf(address(router)), routerInitialUsdsBalancePre);
-        assertEq(DAI.balanceOf(address(router)), routerInitialDaiBalancePre);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePre - amount);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePre + amount);
+        assertEq(USDS.balanceOf(address(router)), routerInitialUSDSBalancePre);
+        assertEq(DAI.balanceOf(address(router)), routerInitialDAIBalancePre);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
         upgradeBridgeAndSetupRoute();
 
-        uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
-        uint256 routerInitialUsdsBalancePost = USDS.balanceOf(address(router));
-        uint256 routerInitialDaiBalancePost = DAI.balanceOf(address(router));
+        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+        uint256 routerInitialUSDSBalancePost = USDS.balanceOf(address(router));
+        uint256 routerInitialDAIBalancePost = DAI.balanceOf(address(router));
 
         vm.startPrank(alice);
 
@@ -182,11 +182,11 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost - amount);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePost + amount);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
-        assertEq(USDS.balanceOf(address(router)), routerInitialUsdsBalancePost);
-        assertEq(DAI.balanceOf(address(router)), routerInitialDaiBalancePost);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost - amount);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost + amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(address(router)), routerInitialUSDSBalancePost);
+        assertEq(DAI.balanceOf(address(router)), routerInitialDAIBalancePost);
     }
 
     function testFuzzRelayGNO(uint256 amount) public {
@@ -195,8 +195,8 @@ contract BridgeRouterTest is SetupTest {
         deal(address(GNO), alice, amount * 2);
 
         // Pre USDS upgrade
-        uint256 aliceInitialGNOBalancePre = GNO.balanceOf(alice);
-        uint256 omnibridgeInitialGNOBalancePre = GNO.balanceOf(FOREIGN_OMNIBRIDGE);
+        uint256 initialAliceGNOBalancePre = GNO.balanceOf(alice);
+        uint256 omniinitialBridgeGNOBalancePre = GNO.balanceOf(FOREIGN_OMNIBRIDGE);
 
         vm.startPrank(alice);
 
@@ -205,15 +205,15 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(GNO.balanceOf(alice), aliceInitialGNOBalancePre - amount);
-        assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialGNOBalancePre + amount);
+        assertEq(GNO.balanceOf(alice), initialAliceGNOBalancePre - amount);
+        assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omniinitialBridgeGNOBalancePre + amount);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
         upgradeBridgeAndSetupRoute();
 
         // Post USDS upgrade
-        uint256 aliceInitialGNOBalancePost = GNO.balanceOf(alice);
-        uint256 omnibridgeInitialGNOBalancePost = GNO.balanceOf(FOREIGN_OMNIBRIDGE);
+        uint256 initialAliceGNOBalancePost = GNO.balanceOf(alice);
+        uint256 omniinitialBridgeGNOBalancePost = GNO.balanceOf(FOREIGN_OMNIBRIDGE);
 
         vm.startPrank(alice);
 
@@ -222,8 +222,8 @@ contract BridgeRouterTest is SetupTest {
 
         vm.stopPrank();
 
-        assertEq(GNO.balanceOf(alice), aliceInitialGNOBalancePost - amount);
-        assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialGNOBalancePost + amount);
+        assertEq(GNO.balanceOf(alice), initialAliceGNOBalancePost - amount);
+        assertEq(GNO.balanceOf(FOREIGN_OMNIBRIDGE), omniinitialBridgeGNOBalancePost + amount);
     }
 
     function testFuzzRelayETH(uint256 amount) public payable {
@@ -235,124 +235,155 @@ contract BridgeRouterTest is SetupTest {
 
         // Pre USDS Upgrade
 
-        uint256 aliceInitialBalancePre = alice.balance;
-        uint256 omnibridgeInitialBalancePre = weth.balanceOf(FOREIGN_OMNIBRIDGE);
+        uint256 initialAliceBalancePre = alice.balance;
+        uint256 omniinitialBridgeBalancePre = weth.balanceOf(FOREIGN_OMNIBRIDGE);
 
         vm.prank(alice);
         router.relayTokens{value: amount}(address(0), bob, amount);
 
-        assertEq(alice.balance, aliceInitialBalancePre - amount);
-        assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialBalancePre + amount);
+        assertEq(alice.balance, initialAliceBalancePre - amount);
+        assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omniinitialBridgeBalancePre + amount);
 
         teleport(block.timestamp + 1 days); // For cases where amount > current bridge limit and will raise Error ("Exceeds bridge daily limit")
         upgradeBridgeAndSetupRoute();
 
         // Post USDS upgrade
 
-        uint256 aliceInitialBalancePost = alice.balance;
-        uint256 omnibridgeInitialBalancePost = weth.balanceOf(FOREIGN_OMNIBRIDGE);
+        uint256 initialAliceBalancePost = alice.balance;
+        uint256 omniinitialBridgeBalancePost = weth.balanceOf(FOREIGN_OMNIBRIDGE);
 
         vm.prank(alice);
         router.relayTokens{value: amount}(address(0), bob, amount);
 
-        assertEq(alice.balance, aliceInitialBalancePost - amount);
-        assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omnibridgeInitialBalancePost + amount);
+        assertEq(alice.balance, initialAliceBalancePost - amount);
+        assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omniinitialBridgeBalancePost + amount);
     }
 
-    function testFuzzExecuteSignaturePreUpgrade(uint256 amount) public {
-        amount = bound(amount, 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress) - 10 ether);
+    function testFuzzExecuteSignaturesPreUpgradeAmountLeBridgeBalance(uint256 amount) public {
+        uint256 initialAliceUSDSBalancePre = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePre = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeDAIBalancePre);
         vm.assume(bridge.withinExecutionLimit(amount));
-        uint256 claimAmount = amount;
         addMockValidator();
 
-        // Pre USDS Upgrade
-
-        uint256 aliceInitialUsdsBalancePre = USDS.balanceOf(alice);
-        uint256 aliceInitialDaiBalancePre = DAI.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePre = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePre = DAI.balanceOf(bridgeAddress);
-
-        (bytes memory messagePre, bytes memory signaturesPre) = getMessageAndSignatures(
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
             alice,
-            claimAmount,
+            amount,
             bytes32(uint256(20000000)), // nonce
             bridgeAddress,
             validatorPk
         );
 
         vm.prank(alice);
-        router.executeSignatures(messagePre, signaturesPre);
+        router.executeSignatures(message, signatures);
 
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePre + claimAmount);
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePre);
-        assertEq(USDS.balanceOf(bridgeAddress), bridgeInitialUsdsBalancePre);
-        if (bridgeInitialDaiBalancePre > claimAmount) {
-            assertEq(
-                DAI.balanceOf(bridgeAddress),
-                bridgeInitialDaiBalancePre - claimAmount,
-                "DAI balance of bridge should more than min threshold"
-            );
-        } else {
-            assertEq(
-                DAI.balanceOf(bridgeAddress),
-                bridge.minCashThreshold(address(DAI)),
-                "DAI balance of bridge should equal to min threshold"
-            );
-        }
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePre + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePre);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePre - amount);
     }
 
-    // Should also get DAI after the upgrade when calling executeSignatures
-    function testFuzzExecuteSignaturesPostUpgrade(uint256 amount) public {
-        upgradeBridgeAndSetupRoute();
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+    function testFuzzExecuteSignaturesPreUpgradeAmountGtBridgeBalance(uint256 amount) public {
+        uint256 minCashThreshold = bridge.minCashThreshold(address(DAI));
+        uint256 initialAliceUSDSBalancePre = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePre = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(
+            amount, initialBridgeDAIBalancePre + 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress)
+        );
         vm.assume(bridge.withinExecutionLimit(amount));
-        uint256 claimAmount = amount;
         addMockValidator();
 
-        uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
-        uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
-
-        (bytes memory messagePost, bytes memory signaturesPost) = getMessageAndSignatures(
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
             alice,
-            claimAmount,
-            bytes32(uint256(20000001)), // nonce
+            amount,
+            bytes32(uint256(20000000)), // nonce
             bridgeAddress,
             validatorPk
         );
 
         vm.prank(alice);
-        router.executeSignatures(messagePost, signaturesPost);
+        router.executeSignatures(message, signatures);
 
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost);
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost + claimAmount);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
-        if (bridgeInitialUsdsBalancePost > claimAmount) {
-            assertEq(
-                USDS.balanceOf(bridgeAddress),
-                bridgeInitialUsdsBalancePost - claimAmount,
-                "USDS balance of bridge should more than min threshold"
-            );
-        } else {
-            assertEq(
-                USDS.balanceOf(bridgeAddress),
-                bridge.minCashThreshold(address(USDS)),
-                "USDS balance of bridge should equal to min threshold"
-            );
-        }
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePre + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePre);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
+        assertEq(DAI.balanceOf(bridgeAddress), minCashThreshold);
+    }
+
+    function testFuzzExecuteSignaturesPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalancePost);
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            validatorPk
+        );
+
+        vm.prank(alice);
+        router.executeSignatures(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost - amount);
+    }
+
+    function testFuzzExecuteSignaturesPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
+        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(
+            amount,
+            initialBridgeUSDSBalancePost + 1 ether,
+            sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            validatorPk
+        );
+
+        vm.prank(alice);
+        router.executeSignatures(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold);
     }
 
     function testFuzzExecuteSignaturesUSDSPreUpgrade(uint256 amount) public {
         amount = bound(amount, 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress) - 10 ether);
         vm.assume(bridge.withinExecutionLimit(amount));
-        uint256 claimAmount = amount;
         addMockValidator();
 
         // Pre USDS Upgrade
-        (bytes memory messagePre, bytes memory signaturesPre) = getMessageAndSignatures(
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
             alice,
-            claimAmount,
+            amount,
             bytes32(uint256(20000000)), // nonce
             bridgeAddress,
             validatorPk
@@ -360,48 +391,66 @@ contract BridgeRouterTest is SetupTest {
 
         vm.prank(alice);
         vm.expectRevert(ClaimUsdsNotSupported.selector);
-        router.executeSignaturesUSDS(messagePre, signaturesPre);
+        router.executeSignaturesUSDS(message, signatures);
     }
 
-    function testFuzzExecuteSignaturesUSDSPostUpgrade(uint256 amount) public {
+    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
         upgradeBridgeAndSetupRoute();
-        amount = bound(amount, 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress) - 10 ether);
+        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalancePost);
         vm.assume(bridge.withinExecutionLimit(amount));
-        uint256 claimAmount = amount;
-        addMockValidator();
 
-        uint256 aliceInitialUsdsBalancePost = USDS.balanceOf(alice);
-        uint256 aliceInitialDaiBalancePost = DAI.balanceOf(alice);
-        uint256 bridgeInitialUsdsBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 bridgeInitialDaiBalancePost = DAI.balanceOf(bridgeAddress);
-
-        (bytes memory messagePost, bytes memory signaturesPost) = getMessageAndSignatures(
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
             alice,
-            claimAmount,
-            bytes32(uint256(20000001)), // nonce
+            amount,
+            bytes32(uint256(20000000)), // nonce
             bridgeAddress,
             validatorPk
         );
 
         vm.prank(alice);
-        router.executeSignaturesUSDS(messagePost, signaturesPost);
+        router.executeSignaturesUSDS(message, signatures);
 
-        assertEq(DAI.balanceOf(alice), aliceInitialDaiBalancePost);
-        assertEq(USDS.balanceOf(alice), aliceInitialUsdsBalancePost + claimAmount);
-        assertEq(DAI.balanceOf(bridgeAddress), bridgeInitialDaiBalancePost);
-        if (bridgeInitialUsdsBalancePost > claimAmount) {
-            assertEq(
-                USDS.balanceOf(bridgeAddress),
-                bridgeInitialUsdsBalancePost - claimAmount,
-                "USDS balance of bridge should more than min threshold"
-            );
-        } else {
-            assertEq(
-                USDS.balanceOf(bridgeAddress),
-                bridge.minCashThreshold(address(USDS)),
-                "USDS balance of bridge should equal to min threshold"
-            );
-        }
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost + amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost - amount);
+    }
+
+    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
+        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(
+            amount,
+            initialBridgeUSDSBalancePost + 1 ether,
+            sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            validatorPk
+        );
+
+        vm.prank(alice);
+        router.executeSignaturesUSDS(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost + amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold);
     }
 
     function testRecoverLockedFund(uint256 amount) public {
@@ -486,5 +535,6 @@ contract BridgeRouterTest is SetupTest {
         vm.stopPrank();
 
         upgradeAndInitializeInterest();
+        addMockValidator();
     }
 }
