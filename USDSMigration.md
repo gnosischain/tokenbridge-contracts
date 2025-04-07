@@ -55,7 +55,7 @@ Transitional contracts during migration
 
 1. After the migration, xDAI Foreign Bridge take USDS as collateral instead of DAI.
 2. CCalling XDaiForeignBridge's executeSignatures and BridgeRouter's executeSignatures will always receive DAI
-3. Calling XDaiForeignBridge's executeSignaturesUSDS and BridgeRouter's executeSignaturesUSDS will receive USDS post upgrade, while BridgeRouter's executeSignaturesUSDS will revert pre upgrade. XDaiForeignBridge's executeSignaturesUSDS
+3. Calling XDaiForeignBridge's executeSignaturesUSDS and BridgeRouter's executeSignaturesUSDS will receive USDS post upgrade, while BridgeRouter's executeSignaturesUSDS will revert pre upgrade.
 
 > User/Third party application should interact with BridgeRouter contract instead of xDAI bridge contract
 
