@@ -16,14 +16,13 @@ contract DeployScript is Script{
         // Disclaimer: In production, bridgeOwner should not be an EOA,
         // as it exposes a front-run vulnerability.
         address bridgeOwner = vm.envAddress("BRIDGE_OWNER");
-        address proxyAdminOwner = vm.envAddress("PROXY_ADMIN_OWNER");
         vm.startBroadcast(deployerPrivateKey);
 
         // Deployment for xDAIForeignBridge can only use forge create because of the incompatible Solidity version (0.4.24 for xDAIForeignBridge)
         // refer to deploy.sh
 
         BridgeRouter router = new BridgeRouter();
-        TransparentUpgradeableProxy bridgeRouterProxy = new TransparentUpgradeableProxy(address(router), proxyAdminOwner,  abi.encodeWithSignature("initialize(address)",bridgeOwner));
+        TransparentUpgradeableProxy bridgeRouterProxy = new TransparentUpgradeableProxy(address(router), bridgeOwner,  abi.encodeWithSignature("initialize(address)",bridgeOwner));
         XDaiBridgePeripheral peripheral = new XDaiBridgePeripheral(address(bridgeRouterProxy));
         XDaiBridgePeripheralForDaiPreUsdsUpgrade xDaiBridgePeripheralForDai = new XDaiBridgePeripheralForDaiPreUsdsUpgrade(address(bridgeRouterProxy));
         XDaiBridgePeripheralForUsdsPreUsdsUpgrade xDaiBridgePeripheralForUsds = new XDaiBridgePeripheralForUsdsPreUsdsUpgrade(address(bridgeRouterProxy));

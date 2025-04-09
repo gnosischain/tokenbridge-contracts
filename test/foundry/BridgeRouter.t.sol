@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.0;
 
 import "forge-std/console.sol";
@@ -24,7 +25,6 @@ contract BridgeRouterTest is SetupTest {
     XDaiBridgePeripheralForUsdsPreUsdsUpgrade peripheralForUSDSPreUSDSUpgrade;
     TransparentUpgradeableProxy routerProxy;
     ProxyAdmin proxyAdmin;
-    address proxyAdminOwner = makeAddr("proxyAdminOwner");
     address public FOREIGN_OMNIBRIDGE = 0x88ad09518695c6c3712AC10a214bE5109a655671;
     address public FOREIGN_AMB = 0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e;
     address public FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
@@ -41,7 +41,7 @@ contract BridgeRouterTest is SetupTest {
         address routerImplAddress = address(router);
 
         routerProxy = new TransparentUpgradeableProxy(
-            address(router), proxyAdminOwner, abi.encodeWithSignature("initialize(address)", bridgeOwner)
+            address(router), bridgeOwner, abi.encodeWithSignature("initialize(address)", bridgeOwner)
         );
         router = BridgeRouter(address(routerProxy));
         implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
@@ -51,7 +51,7 @@ contract BridgeRouterTest is SetupTest {
 
         assertEq(router.owner(), bridgeOwner, "invalid router owner");
         assertEq(address(uint160(uint256(implementationSlot))), routerImplAddress, "invalid implementation");
-        assertEq(proxyAdmin.owner(), proxyAdminOwner, "invalid proxy admin owner ");
+        assertEq(proxyAdmin.owner(), bridgeOwner, "invalid proxy admin owner ");
         assertEq(address(uint160(uint256(adminSlot))), address(proxyAdmin), "invalid admin slot");
 
         peripheral = new XDaiBridgePeripheral(address(routerProxy));
@@ -81,17 +81,13 @@ contract BridgeRouterTest is SetupTest {
         BridgeRouter newRouterImpl = new BridgeRouter();
 
         vm.prank(bridgeOwner);
-        vm.expectRevert();
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(routerProxy)), address(newRouterImpl), "");
-
-        vm.prank(proxyAdminOwner);
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(routerProxy)), address(newRouterImpl), "");
 
         implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
         adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
 
         assertEq(router.owner(), bridgeOwner, "invalid router owner");
-        assertEq(proxyAdmin.owner(), proxyAdminOwner, "invalid proxy admin owner ");
+        assertEq(proxyAdmin.owner(), bridgeOwner, "invalid proxy admin owner ");
         assertEq(address(uint160(uint256(adminSlot))), address(proxyAdmin), "invalid admin slot");
         assertEq(address(uint160(uint256(implementationSlot))), address(newRouterImpl), "invalid implementation");
     }
