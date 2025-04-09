@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import {Script} from "forge-std/Script.sol";
 
-import {XDaiBridgePeripheral} from "../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
-import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from "../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
-import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from "../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
-import {BridgeRouter} from "../contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol";
+import {XDaiBridgePeripheral} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol";
+import {XDaiBridgePeripheralForDaiPreUsdsUpgrade} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol";
+import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
+import {BridgeRouter} from "../../contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract DeployScript is Script{

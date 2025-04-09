@@ -28,7 +28,7 @@ or
 ### Deploy
 
 ```
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_MAINNET --private-key $PRIVATE_KEY --broadcast
+forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_MAINNET --private-key $PRIVATE_KEY --verify --etherscan-api-key --broadcast
 ```
 
 # Contracts
@@ -94,3 +94,36 @@ After migration (current):
    -> claim DAI on Ethereum
 7. `xDAIForeignBridge.executeSignaturesUSDS(bytes memory message, bytes memory signatures)`  
    -> claim USDS on Ethereum
+
+# Function calls during the proxy upgrade
+
+BRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
+
+Caller: Bridge Owner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
+
+```solidity
+   uint256 initialVersion = 8
+   address newImpl = # TODO: deploy
+   bridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
+
+   // disable interested for DAI and swap sDAI -> sUSDS
+   bridgeProxy.swapSDAIToUSDS();
+   bridgeProxy.initializeInterest(
+      address(USDS): 0xdC035D45d973E3EC169d2276DDab16f1e407384F,
+      minCashThreshold: 1000000000000000000000000,
+      minInterestPaid: 1000000000000000000000,
+      gnosisInterestReceiver: 0x670daeaF0F1a5e336090504C68179670B5059088
+   );
+   bridgeProxy.invest(address(USDS));
+```
+
+Update routes on BridgeRouter (caller: Router Owner)
+
+ROUTER_ADDRESS= # TODO deploy
+XDAI_BRIDGE_PERIPHERAL= # TODO deploy
+XDAI_FOREIGNBRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
+
+```solidity
+router.setRoute(address(DAI), address(xDAIBridgeperipheral));
+router.setRoute(address(USDS), xDAIForeignBridgeProxy);
+```
