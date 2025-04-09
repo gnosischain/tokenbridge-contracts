@@ -83,6 +83,10 @@ contract BridgeRouterTest is SetupTest {
         vm.prank(bridgeOwner);
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(routerProxy)), address(newRouterImpl), "");
 
+        // To make sure the same address can be used for proxy owner and the router owner
+        vm.prank(bridgeOwner);
+        router.setRoute(address(DAI),address(peripheralForDAIPreUSDSUpgrade));
+
         implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
         adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
 

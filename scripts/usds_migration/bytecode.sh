@@ -31,7 +31,7 @@ BridgeRouter_json="out/BridgeRouter.sol/BridgeRouter.json"
 XDaiBridgePeripheral_json="out/XDaiBridgePeripheral.sol/XDaiBridgePeripheral.json"
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_json="out/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol/XDaiBridgePeripheralForDaiPreUsdsUpgrade.json"
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json="out/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.json"
-
+TransparentUpgradeableProxy_json="out/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json"
 
 
 # Extract deployed bytecode
@@ -40,7 +40,7 @@ BridgeRouter_bytecode=$(jq -r '.deployedBytecode.object' "$BridgeRouter_json")
 XDaiBridgePeripheral_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheral_json")
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_json")
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json")
-
+TransparentUpgradeableProxy_bytecode=$(jq -r '.deployedBytecode.object' "$TransparentUpgradeableProxy_json")
 
 cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
 {
@@ -49,6 +49,7 @@ cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
   "XDaiBridgePeripheral deployedBytecode": "$XDaiBridgePeripheral_bytecode",
   "XDaiBridgePeripheralForDaiPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode",
   "XDaiBridgePeripheralForUsdsPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode"
+  "TransparentUpgradeableProxy deployedBytecode": "$TransparentUpgradeableProxy_bytecode"
 }
 EOF
 
