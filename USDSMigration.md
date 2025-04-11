@@ -39,11 +39,11 @@ The result will be written into `scripts/usds_migration/deployBytecode_usds_migr
 
 Here are the list of keccak256 hashes of the bytecode of each contracts:
 
-• xDaiForeignBridge: `0xb8b0173057aeedf9412bbe27dbd8983a403c3153e49a37d61cdf0ad6d63952d7`
-• BridgeRouter: `0x96dcffff68bef488694f12c7aca620b60771c46c8ef460338f3486dde664ab01`
-• XDaiBridgePeripheral: `0x26ef751bddddbd7addbd9dbe9365b8a23f0648fce0ef5b9c5f364a0799b5735f`
-• XDaiBridgePeripheralForDaiPreUsdsUpgrade: `0x7bb382eb2b03e84e8d905c2e0eac7fac6985722d3a88793bb7ee083789dbf7f6`
-• XDaiBridgePeripheralForUsdsPreUsdsUpgrade: `0x55cb479b9e81039f32231ce704cce153b0068036ea69df5115156086e8e4b32d`
+• xDaiForeignBridge: `0xb8b0173057aeedf9412bbe27dbd8983a403c3153e49a37d61cdf0ad6d63952d7`  
+• BridgeRouter: `0x96dcffff68bef488694f12c7aca620b60771c46c8ef460338f3486dde664ab01`  
+• XDaiBridgePeripheral: `0x26ef751bddddbd7addbd9dbe9365b8a23f0648fce0ef5b9c5f364a0799b5735f`  
+• XDaiBridgePeripheralForDaiPreUsdsUpgrade: `0x7bb382eb2b03e84e8d905c2e0eac7fac6985722d3a88793bb7ee083789dbf7f6`  
+• XDaiBridgePeripheralForUsdsPreUsdsUpgrade: `0x55cb479b9e81039f32231ce704cce153b0068036ea69df5115156086e8e4b32d`  
 • TransparentUpgradeableProxy: `0xb7ac622259b04bc6eb1bd4aed1cae089ba8927600bddc2c248f610c20df75624`
 
 ### Contract versions
@@ -107,7 +107,7 @@ Before migration (current):
 6. `xDAIForeignBridge.executeSignatures(bytes memory message, bytes memory signatures)`  
    -> claim DAI on Ethereum
 
-After migration (current):
+After migration:
 
 1. `BridgeRouter.relayTokens(address token, address recipient, uint256 amount)`
    -> When token is DAI / USDS from Ethereum, receive xDAI on GC.  
@@ -138,30 +138,30 @@ router.setRoute(USDS,address(XDaiBridgePeripheralForUsdsPreUsdsUpgrade));
 
 **Relay DAI**
 
-1. DAI.approve(BridgeRouter, amount)
-   -> [BridgeRouter.relayTokens(DAI, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L44)
-   -> [XDaiBridgePeripheralForDaiPreUsdsUpgrade.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol#L36)
+1. DAI.approve(BridgeRouter, amount)  
+   -> [BridgeRouter.relayTokens(DAI, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L44)  
+   -> [XDaiBridgePeripheralForDaiPreUsdsUpgrade.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol#L36)  
    -> [xDAIForeignBridge.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol#L64)
 
 **Claim DAI**
 
-1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L81)
-   -> [xDAIForeignBridge.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/BasicForeignBridge.sol#L22)
+1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L81)  
+   -> [xDAIForeignBridge.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/BasicForeignBridge.sol#L22)  
    -> (internal) [onExecuteMessage](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L80-L91) |Here is where the DAI is transferred
 
 **Relay USDS**
 
-1. USDS.approve(BridgeRouter, amount)
-   -> [BridgeRouter.relayTokens(USDS, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L47)
-   -> [XDaiBridgePeripheralForUsdsPreUsdsUpgrade.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol#L36) |Here is where USDS is swap to DAI
+1. USDS.approve(BridgeRouter, amount)  
+   -> [BridgeRouter.relayTokens(USDS, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L47)  
+   -> [XDaiBridgePeripheralForUsdsPreUsdsUpgrade.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol#L36) |Here is where USDS is swap to DAI  
    -> [xDAIForeignBridge.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol#L64)
 
 **Claim USDS**
 
-1. [BridgeRouter.executeSignaturesUSDS(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L105-L109)
+1. [BridgeRouter.executeSignaturesUSDS(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L105-L109)  
    -> revert `ClaimUsdsNotSupported()` `0x662554fc43b5d87090a5f9e8b365ca35213d23ae7082671886b760dc510ee8da`
 
-XDaiForeignBridge's current implementation: https://etherscan.io/address/0x166124b75c798cedf1b43655e9b5284ebd5203db
+XDaiForeignBridge's current implementation: https://etherscan.io/address/0x166124b75c798cedf1b43655e9b5284ebd5203db  
 Code: https://github.com/gnosischain/tokenbridge-contracts/tree/xdaibridge/contracts/upgradeable_contracts/erc20_to_native
 
 ## Upgrade
@@ -211,24 +211,24 @@ router.setRoute(address(USDS), xDAIForeignBridgeProxy);
 
 **Relay DAI**
 
-1. DAI.approve(BridgeRouter, amount)
-   -> [BridgeRouter.relayTokens(DAI, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L44)
-   -> [XDaiBridgePeripheral.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol#L35)
+1. DAI.approve(BridgeRouter, amount)  
+   -> [BridgeRouter.relayTokens(DAI, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L44)  
+   -> [XDaiBridgePeripheral.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheral.sol#L35)  
    -> [xDAIForeignBridge.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol#L64)
 
 **Claim DAI**
 
-1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L85)
-   -> [xDAIForeignBridge.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/BasicForeignBridge.sol#L22)
+1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L85)  
+   -> [xDAIForeignBridge.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/BasicForeignBridge.sol#L22)  
    -> (internal)[onExecuteMessage](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L146-L156) |Here is where USDS is swap to DAI
 
 **Relay USDS**
 
-1. USDS.approve(bridgeRouter, amount)
-   -> [BridgeRouter.relayTokens(USDS, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L47)
+1. USDS.approve(bridgeRouter, amount)  
+   -> [BridgeRouter.relayTokens(USDS, receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L47)  
    -> [xDAIForeignBridge.relayTokens(receiver, amount)](./contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol#L64)
 
 **Claim USDS**
 
-1. [BridgeRouter.executeSignaturesUSDS(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L111)
+1. [BridgeRouter.executeSignaturesUSDS(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L111)  
    -> [xDAIForeigbBridge.executeSignaturesUSDS(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L113)
