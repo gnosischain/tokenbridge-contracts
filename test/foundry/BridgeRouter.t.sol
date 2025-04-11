@@ -528,13 +528,18 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(router).balance, 0);
     }
 
+    /// The following function calls during the upgrade is a bundled Safe transaction, 
+    /// that will be signed and executed by [bridge governors](https://docs.gnosischain.com/bridges/management/#bridge-governance)
     function upgradeBridgeAndSetupRoute() public {
         vm.startPrank(bridgeOwner);
         router.setRoute(address(DAI), address(peripheral));
         router.setRoute(address(USDS), FOREIGN_XDAIBRIDGE);
         vm.stopPrank();
 
-        upgradeAndInitializeInterest();
+        upgradeAndInitializeInterest();  
+        // In production, the upgrade stops here
+        // Adding mock validator here for testing purpose. 
+        // In production, the tx need to be signed by 4/7 [validators](https://docs.gnosischain.com/bridges/management/validators).
         addMockValidator();
     }
 }

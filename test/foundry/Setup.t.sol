@@ -86,6 +86,9 @@ contract SetupTest is Test {
         assertTrue(implInitialized);
     }
 
+    /// The following function calls during the upgrade on BridgeProxy need to be bundled with another two Router.setRoute calls in a bundled Safe transaction, 
+    /// that will be signed and executed by [bridge governors](https://docs.gnosischain.com/bridges/management/#bridge-governance)
+    /// Check BridgeRouter.t.sol#upgradeBridgeAndSetupRoute() for the complete calls during the upgrade
     function upgradeAndInitializeInterest() public {
         uint256 initialVersion = bridgeProxy.version();
         uint256 minCashThresholdForUsds = bridge.minCashThreshold(address(DAI));
