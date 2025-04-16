@@ -24,13 +24,13 @@ contract PeripheralTest is SetupTest {
     function test_RevertIf_NotFromRouter() public {
         uint256 amount = 10e25;
         vm.startPrank(alice);
-        vm.expectRevert("revert: only Router");
+        vm.expectRevert("only Router");
         peripheral.relayTokens(makeAddr("token"), amount);
 
-        vm.expectRevert("revert: only Router");
+        vm.expectRevert("only Router");
         peripheralForDaiPreUsdsUpgrade.relayTokens(makeAddr("token"), amount);
 
-        vm.expectRevert("revert: only Router");
+        vm.expectRevert("only Router");
         peripheralForUsdsPreUsdsUpgrade.relayTokens(makeAddr("token"), amount);
 
         vm.stopPrank();
