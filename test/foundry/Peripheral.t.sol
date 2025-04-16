@@ -21,7 +21,7 @@ contract PeripheralTest is SetupTest {
         peripheralForUsdsPreUsdsUpgrade = new XDaiBridgePeripheralForUsdsPreUsdsUpgrade(address(router));
     }
 
-    function testFailIfNotFromRouter() public {
+    function test_RevertIf_NotFromRouter() public {
         uint256 amount = 10e25;
         vm.startPrank(alice);
         vm.expectRevert("revert: only Router");
