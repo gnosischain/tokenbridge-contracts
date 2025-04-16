@@ -87,4 +87,5 @@ interface IXDaiForeignBridge {
     function withinExecutionLimit(uint256 _amount) external view returns (bool);
     function withinLimit(uint256 _amount) external view returns (bool);
     function setNewErc20Token(address newDAI) external;
+    function recoverLegacyTransfer(address _to, uint256 amount) external;
 }

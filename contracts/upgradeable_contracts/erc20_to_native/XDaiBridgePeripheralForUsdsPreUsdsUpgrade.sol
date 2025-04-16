@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import { IXDaiForeignBridge } from "../../interfaces/IXDaiForeignBridge.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
+import {IXDaiForeignBridge} from "../../interfaces/IXDaiForeignBridge.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
 
 interface IDaiUsds {
     function daiToUsds(address usr, uint256 wad) external;
@@ -40,11 +40,9 @@ contract XDaiBridgePeripheralForUsdsPreUsdsUpgrade {
         // swap Usds to Dai
         IERC20(USDS).approve(DAIUSDS, amount);
         IDaiUsds(DAIUSDS).usdsToDai(address(this), amount);
-        require(IERC20(DAI).balanceOf(address(this)) == amount, "swap unsuccessfull");
 
         // call XDaibridge relayTokens
         IERC20(DAI).approve(FOREIGN_XDAIBRIDGE, amount);
         IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).relayTokens(receiver, amount);
-
     }
 }

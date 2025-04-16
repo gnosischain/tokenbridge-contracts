@@ -43,7 +43,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      * @dev return the address of USDS
      */
     function erc20token() public view returns (ERC20) {
-        return daiToken();
+        return ERC20(USDS);
     }
 
     /**
@@ -75,20 +75,18 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      * @dev Withdraws USDS from sUSDS vault to the bridge up to min cash threshold
      */
     function refillBridge() external {
-        /// daiToken() returns USDS address
-        uint256 currentBalance = daiToken().balanceOf(address(this));
-        uint256 minThreshold = minCashThreshold(address(daiToken()));
+        uint256 currentBalance = ERC20(USDS).balanceOf(address(this));
+        uint256 minThreshold = minCashThreshold(USDS);
         require(currentBalance < minThreshold, "Bridge is Filled");
         uint256 withdrawAmount = minThreshold - currentBalance;
-        _withdraw(address(daiToken()), withdrawAmount);
+        _withdraw(USDS, withdrawAmount);
     }
 
     /**
      * @dev Invests the USDS into the sUSDS Vault.
      */
     function investDai() external {
-        /// daiToken() returns USDS address
-        invest(address(daiToken()));
+        invest(USDS);
     }
 
     /**
@@ -98,10 +96,10 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      */
     function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
-        // daiToken() returns USDS address
-        address bridgedToken = address(daiToken());
-        require(_token != address(bridgedToken), "Can't claim USDS");
-        require(_token != address(sDaiToken()) || !isInterestEnabled(bridgedToken), "Can't claim sUSDS"); // sDaiToken() returns sUSDS address
+        address bridgedToken = USDS;
+        address sUSDS = 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD;
+        require(_token != bridgedToken, "Can't claim USDS");
+        require(_token != sUSDS || !isInterestEnabled(bridgedToken), "Can't claim sUSDS");
         claimValues(_token, _to);
     }
 
@@ -137,17 +135,23 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
      * @param _to address of the tokens/coins receiver.
      */
 
-    function recoverLegacyTransfer(address _to) external onlyIfUpgradeabilityOwner {
-        /// daiToken() returns USDS address
-        claimValues(address(daiToken()), _to);
+    function recoverLegacyTransfer(address _to, uint256 recoverAmount) external onlyIfUpgradeabilityOwner {
+        uint256 currentBalance = ERC20(USDS).balanceOf(this);
+        uint256 minThreshold = minCashThreshold(USDS);
+        require(recoverAmount < currentBalance, "invalid withdraw balance");
+        if (currentBalance - recoverAmount < minThreshold) {
+            // need to fill the bridge to ensure enough USDS for withdrawal
+            uint256 withdrawAmount = minThreshold - currentBalance + recoverAmount;
+            _withdraw(USDS, withdrawAmount);
+        }
+        ERC20(USDS).transfer(_to, recoverAmount);
     }
 
     /// @dev this function always transfer DAI to _recipient
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
-        /// daiToken() returns USDS address
-        ERC20 token = daiToken();
+        ERC20 token = ERC20(USDS);
         ensureEnoughTokens(token, _amount);
 
         ERC20(USDS).approve(DAI_USDS, _amount);
@@ -159,16 +163,14 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     function onExecuteMessageUSDS(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
-        /// daiToken() returns USDS address
-        ERC20 token = daiToken();
+        ERC20 token = ERC20(USDS);
         ensureEnoughTokens(token, _amount);
 
         return token.transfer(_recipient, _amount);
     }
 
     function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {
-        /// daiToken() returns USDS address
-        ensureEnoughTokens(daiToken(), amount);
+        ensureEnoughTokens(ERC20(USDS), amount);
 
         return super.onExecuteMessageGSN(recipient, amount, fee);
     }

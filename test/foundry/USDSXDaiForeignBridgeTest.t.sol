@@ -408,4 +408,29 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         vm.expectRevert("Receiver can't be the Bridge"); // this error is obsolete because _relayInterest is used, instead of _transferInterest
         bridge.setInterestReceiver(address(USDS), bridgeAddress);
     }
+
+    function testRecoverLegacyTransfer(uint256 minCashThreshold, uint256 amount) public {
+        upgradeAndInitializeInterest();
+        amount = bound(amount, 1, USDS.balanceOf(address(bridge)) - 1);
+        minCashThreshold = bound(minCashThreshold, 1, sUSDS.maxWithdraw(address(bridge)));
+
+        uint256 initialBridgeOwnerUsdsBalance = USDS.balanceOf(bridgeOwner);
+        uint256 initialBridgeUsdsBalance = USDS.balanceOf(address(bridge));
+        console.log(initialBridgeOwnerUsdsBalance);
+        console.log(initialBridgeUsdsBalance);
+
+        vm.startPrank(bridgeOwner);
+        bridge.setMinCashThreshold(address(USDS), minCashThreshold);
+        bridge.recoverLegacyTransfer(bridgeOwner, amount);
+        vm.stopPrank();
+
+        assertEq(USDS.balanceOf(bridgeOwner), initialBridgeOwnerUsdsBalance + amount, "invalid receiver amount");
+        
+        if(initialBridgeUsdsBalance - amount < minCashThreshold){
+            assertEq(USDS.balanceOf(address(bridge)), minCashThreshold, "bridge balance should equal to minCashThreshold");
+        }else{
+            // bridge dont need to be refilled
+            assertEq(USDS.balanceOf(address(bridge)), initialBridgeUsdsBalance - amount, "invalid bridge balance");
+        }
+    }
 }
