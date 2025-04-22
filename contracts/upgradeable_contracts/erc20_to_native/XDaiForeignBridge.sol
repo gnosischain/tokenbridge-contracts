@@ -141,7 +141,7 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         require(recoverAmount < currentBalance, "invalid withdraw balance");
         if (currentBalance - recoverAmount < minThreshold) {
             // need to fill the bridge to ensure enough USDS for withdrawal
-            uint256 withdrawAmount = minThreshold - currentBalance + recoverAmount;
+            uint256 withdrawAmount = minThreshold + recoverAmount - currentBalance;
             _withdraw(USDS, withdrawAmount);
         }
         ERC20(USDS).transfer(_to, recoverAmount);
