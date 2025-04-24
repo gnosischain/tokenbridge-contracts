@@ -14,7 +14,8 @@ optimizer-runs = 10
 auto_detect_solc = true
 fs_permissions = [{ access = "read", path = "./out"}]
 compilation_restrictions = [
-    { paths = "contracts/upgradeable_contracts/erc20_to_native/{BridgeRouter,XDaiBridgePeripheral,XDaiBridgePeripheralForDaiPreUsdsUpgrade,XDaiBridgePeripheralForUsdsPreUsdsUpgrade}.sol", version = "0.8.25" },
+    { paths = "contracts/upgradeable_contracts/erc20_to_native/{BridgeRouter,XDaiBridgePeripheral,XDaiBridgePeripheralForDaiPreUsdsUpgrade,XDaiBridgePeripheralForUsdsPreUsdsUpgrade}.sol", version = "=0.8.25" },
+    { paths = "contracts/upgradeability/TransparentUpgradeableProxy.sol", version = "=0.8.25" },
 ]
 
 
