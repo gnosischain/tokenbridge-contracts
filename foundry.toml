@@ -10,7 +10,7 @@ remappings = [
     "openzeppelin-solidity/=node_modules/openzeppelin-solidity"
     ]
 optimizer = true
-optimizer-runs = 100
+optimizer-runs = 10
 auto_detect_solc = true
 fs_permissions = [{ access = "read", path = "./out"}]
 compilation_restrictions = [
