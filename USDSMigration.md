@@ -81,10 +81,10 @@ Here are the list of keccak256 hashes of the bytecode of each contracts:
 | Contract | Deployed Bytecode Hash (keccak256) |
 |----------|---------------------------|
 | xDaiForeignBridge | `0xae6cf6b0c1ab000685f608323f4c61fc35007d2b6508779c331362924d8c5b36` |
-| BridgeRouter | `0x33d39ab3b29a3d95f5e1872aeac39201f8e96cf707cbb8635230e32e19082a05` |
-| XDaiBridgePeripheral | `0x1158e9801e9ddc9ad3d58e744520d3f03906602b219a3b589d952e7288454e51` |
-| XDaiBridgePeripheralForDaiPreUsdsUpgrade | `0x75ca07e026dc9eb84c7233adf0275a3b921c3d5289481cf4f2960465bd4b32f9` |
-| XDaiBridgePeripheralForUsdsPreUsdsUpgrade | `0x9f9d90961c7f89a01e09f2c21fa6eb21b0aca4e0d206f9c252f4c5f20b493110` |
+| BridgeRouter | `0x774fd6bc5a1ad5d8c2771e0b57ecd0fd5eb6736995a956ae43e76e4b2655dcfc` |
+| XDaiBridgePeripheral | `0xd1038978e37d42c24c9dcd162225a5d07bbfce982e3a4ac57fa3cba57f4f850e` |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade | `0x561788a0e3faf5287713319fa602839ca8814ec2de6d249e01004c0e0f8b9cf1` |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade | `0x9204e65401866032e01d4c0a7d7cd56593b5b5f48ef7b868030b198192d92268` |
 | TransparentUpgradeableProxy | `0xd1ec1464355d2c46907627b1200ed3cfc24cfcee249f0872fa5d33ae05845dbc` |
 
 ### Contract versions
@@ -124,6 +124,17 @@ Transitional contracts during migration
 3. Calling XDaiForeignBridge's `executeSignaturesUSDS` and BridgeRouter's `executeSignaturesUSDS` will **receive USDS** post upgrade, while BridgeRouter's executeSignaturesUSDS will **revert** pre upgrade.
 
 > User/Third party application **SHOULD** interact with BridgeRouter contract instead of xDAI bridge contract
+
+### Contract addresses
+
+| Contract                                   | Chain    | Address  |
+| ------------------------------------------ | -------- | -------- |
+| BridgeRouter                               | Ethereum | ToDeploy |
+| XDaiBridgePeripheral                       | Ethereum | ToDeploy |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum | ToDeploy |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum | ToDeploy |
+| XDaiForeignBridge(Implementation Contract) | Ethereum | ToDeploy |
+| TransparentUpgradeableProxy                | Ethereum | ToDeploy |
 
 # Interacting with the contracts
 
@@ -442,3 +453,7 @@ To modify your existing smart contract code to work with the xDAI bridge after U
    // or to claim USDS after the migration
    BridgeRouter.executeSignaturesUSDS(bytes message, bytes signatures)
 ```
+
+## ABI
+
+TODO

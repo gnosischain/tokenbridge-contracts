@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.8.25;
 
 import {IXDaiForeignBridge} from "../../interfaces/IXDaiForeignBridge.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
