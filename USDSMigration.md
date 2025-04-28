@@ -69,7 +69,7 @@ forge test --fork-url $RPC_MAINNET
 forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_MAINNET --private-key $PRIVATE_KEY --verify --etherscan-api-key --broadcast
 ```
 
-### Get deployed bytecode
+### Get deployed bytecode of the contract
 
 ```sh
 npm run get-deployed-bytecode
@@ -77,15 +77,23 @@ npm run get-deployed-bytecode
 
 The result will be written into `scripts/usds_migration/deployBytecode_usds_migration.json`.
 
-Here are the list of keccak256 hashes of the bytecode of each contracts:
-| Contract | Deployed Bytecode Hash (keccak256) |
-|----------|---------------------------|
-| xDaiForeignBridge | `0xae6cf6b0c1ab000685f608323f4c61fc35007d2b6508779c331362924d8c5b36` |
-| BridgeRouter | `0x774fd6bc5a1ad5d8c2771e0b57ecd0fd5eb6736995a956ae43e76e4b2655dcfc` |
-| XDaiBridgePeripheral | `0xd1038978e37d42c24c9dcd162225a5d07bbfce982e3a4ac57fa3cba57f4f850e` |
-| XDaiBridgePeripheralForDaiPreUsdsUpgrade | `0x561788a0e3faf5287713319fa602839ca8814ec2de6d249e01004c0e0f8b9cf1` |
-| XDaiBridgePeripheralForUsdsPreUsdsUpgrade | `0x9204e65401866032e01d4c0a7d7cd56593b5b5f48ef7b868030b198192d92268` |
-| TransparentUpgradeableProxy | `0xd1ec1464355d2c46907627b1200ed3cfc24cfcee249f0872fa5d33ae05845dbc` |
+### Get keccak256 hash of the contract
+
+```sh
+npm run get-contract-keccak256
+```
+
+The result will be written into `scripts/usds_migration/keccak256hash.json`.
+
+| Contract                                  | Contract Hash (keccak256)                                            |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| xDaiForeignBridge                         | `0x6e7ca817c9686c0ee3dbcd99e9d498d704fd3aae47c1fab98a6f81adaabff95b` |
+| BridgeRouter                              | `0xc4f7cdc0ec90c22bca996d328c7dc11e20ef11f017eedb8df3d9b6e035f560b4` |
+| XDaiBridgePeripheral                      | `0x3d5e7ff9da196691d2dc57c93036c7414b68d63921dce530c5747017ea39afb5` |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade  | `0x721cfb942f77f4b04de65a4dbb7b1686e2c363689c83de3bee58da3ab9ae0bb3` |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade | `0x74284da7c9b250a0348d431981364bf4e82987ca93524f2c392ea2455fd1e8a9` |
+
+For details about the keccak256 of the contract, please check [Sourcify's doc](https://docs.sourcify.dev/docs/full-vs-partial-match/#full-perfect-matches) and [Solidity's doc](https://docs.soliditylang.org/en/latest/metadata.html)
 
 ### Contract versions
 
@@ -453,7 +461,3 @@ To modify your existing smart contract code to work with the xDAI bridge after U
    // or to claim USDS after the migration
    BridgeRouter.executeSignaturesUSDS(bytes message, bytes signatures)
 ```
-
-## ABI
-
-TODO

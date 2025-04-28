@@ -20,7 +20,8 @@
     "fork-test": "./test/foundry/foundrySetup.sh",
     "production-test": "./test/foundry/production-test.sh",
     "deploy": "./deploy.sh",
-    "get-deployed-bytecode": "chmod +x ./scripts/usds_migration/bytecode.sh && ./scripts/usds_migration/bytecode.sh"
+    "get-deployed-bytecode": "chmod +x ./scripts/usds_migration/bytecode.sh && ./scripts/usds_migration/bytecode.sh",
+    "get-contract-keccak256": "chmod +x ./scripts/usds_migration/keccak256Contracts.sh && ./scripts/usds_migration/keccak256Contracts.sh"
   },
   "author": "POA network",
   "license": "GPLv3",
