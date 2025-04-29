@@ -135,14 +135,14 @@ Transitional contracts during migration
 
 ### Contract addresses
 
-| Contract                                   | Chain    | Address  |
-| ------------------------------------------ | -------- | -------- |
-| BridgeRouter                               | Ethereum | ToDeploy |
-| XDaiBridgePeripheral                       | Ethereum | ToDeploy |
-| XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum | ToDeploy |
-| XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum | ToDeploy |
-| XDaiForeignBridge(Implementation Contract) | Ethereum | ToDeploy |
-| TransparentUpgradeableProxy                | Ethereum | ToDeploy |
+| Contract                                   | Chain    | Address                                      |
+| ------------------------------------------ | -------- | -------------------------------------------- |
+| BridgeRouter Proxy                         | Ethereum | `0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0` |
+| BridgeRouter Implementation                | Ethereum | `0x691c025Efa7ea1c87DF256F2Da9208E5345D40b1` |
+| XDaiBridgePeripheral                       | Ethereum | `0x3b6669727927b934753B018EB421a84Ed4eb0a43` |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum | `0xF676cc15Eb6d15b794aeC65bC20052aFB53D9052` |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum | `0x7df0e6a8BA609A6cC3Ab2fA33D953a3B5584f10C` |
+| XDaiForeignBridge(Implementation Contract) | Ethereum | `0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77` |
 
 # Interacting with the contracts
 
@@ -300,7 +300,7 @@ XDaiForeignBridgeProxy=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
 Caller: Bridge Owner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
 
 ```solidity
-   uint256 initialVersion = 8
+   uint256 initialVersion = 9
    address newImpl = # TODO: deploy
    bridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
 
