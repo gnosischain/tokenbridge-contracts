@@ -235,6 +235,72 @@ graph TD
 
 ### Function Callflow
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant BridgeRouter
+    participant DaiPeripheral as XDaiBridgePeripheralForDaiPreUsdsUpgrade
+    participant UsdsPeripheral as XDaiBridgePeripheralForUsdsPreUsdsUpgrade
+    participant DaiUsds as DaiUsds
+    participant XDaiForeignBridge as XDaiForeignBridge on Ethereum
+    participant GnosisChain as XDaiHomeBridge on Gnosis Chain
+    participant Receiver
+
+    box Ethereum
+        participant User
+        participant BridgeRouter
+        participant DaiPeripheral
+        participant UsdsPeripheral
+        participant DaiUsds
+        participant XDaiForeignBridge
+    end
+
+    box Gnosis Chain
+        participant GnosisChain
+        participant Receiver
+    end
+
+    %% Relay DAI Flow
+    par
+    Note over User,Receiver: Relay DAI
+    User->>BridgeRouter: DAI.approve(BridgeRouter, amount)
+    User->>BridgeRouter: relayTokens(DAI, receiver, amount)
+    BridgeRouter->>DaiPeripheral: Transfer DAI
+    DaiPeripheral->>XDaiForeignBridge: relayTokens(receiver, amount)
+    XDaiForeignBridge->>XDaiForeignBridge: Lock DAI as collateral
+    XDaiForeignBridge-->>GnosisChain: Bridging process
+    GnosisChain->>Receiver: Receive xDAI
+    end
+
+    %% Claim DAI Flow
+    par
+    Note over User,Receiver: Claim DAI
+    User->>BridgeRouter: executeSignatures(message, signatures)
+    BridgeRouter->>XDaiForeignBridge: executeSignatures(message, signatures)
+    XDaiForeignBridge->>User: Transfer DAI to Receiver
+    end
+
+    %% Relay USDS Flow
+    par
+    Note over User,Receiver: Relay USDS
+    User->>BridgeRouter: USDS.approve(BridgeRouter, amount)
+    User->>BridgeRouter: relayTokens(USDS, receiver, amount)
+    BridgeRouter->>UsdsPeripheral: Transfer USDS
+    UsdsPeripheral->>DaiUsds: swapUsdsToDai()
+    DaiUsds->>XDaiForeignBridge: Approve DAI
+    XDaiForeignBridge->>XDaiForeignBridge: Lock DAI as collateral
+    XDaiForeignBridge-->>GnosisChain: Bridging process
+    GnosisChain->>Receiver: Receive xDAI
+    end
+
+    %% Claim USDS Flow (Fails)
+    par
+    Note over User,Receiver: Claim USDS
+    User->>BridgeRouter: executeSignaturesUSDS(message, signatures)
+    BridgeRouter->>BridgeRouter: Revert ClaimUsdsNotSupported()
+    end
+```
+
 **Relay DAI**
 
 1. DAI.approve(BridgeRouter, amount)  
@@ -301,7 +367,7 @@ Caller: Bridge Owner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
 
 ```solidity
    uint256 initialVersion = 9
-   address newImpl = # TODO: deploy
+   address newImpl = 0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77
    bridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
 
    // disable interested for DAI and swap sDAI -> sUSDS
@@ -319,8 +385,8 @@ Caller: Bridge Owner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
 
 Caller: BridgeRouterOwner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6` (same as the bridge owner)
 
-ROUTER_ADDRESS= # TODO deploy
-XDAI_BRIDGE_PERIPHERAL= # TODO deploy
+ROUTER_ADDRESS=0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0
+XDAI_BRIDGE_PERIPHERAL=0x3b6669727927b934753B018EB421a84Ed4eb0a43
 XDAI_FOREIGNBRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
 
 ```solidity
@@ -411,6 +477,68 @@ graph TD
    -> claim USDS on Ethereum
 
 ### Function Callflow
+
+```mermaid
+sequenceDiagram
+    box Ethereum
+        participant User
+        participant BridgeRouter
+        participant XDaiBridgePeripheral
+        participant DaiUsds as DaiUsds
+        participant XDaiForeignBridge
+    end
+
+
+    box Gnosis Chain
+
+        participant GnosisChain as xDaiHomeBridge on Gnosis Chain
+         participant Receiver
+    end
+
+
+
+    %% Relay DAI Flow
+    par
+    Note over User,Receiver: Relay DAI
+    User->>BridgeRouter: DAI.approve(BridgeRouter, amount)
+    User->>BridgeRouter: relayTokens(DAI, receiver, amount)
+    BridgeRouter->>XDaiBridgePeripheral: Transfer DAI
+    XDaiBridgePeripheral->>DaiUsds: swapDaiToUsds()
+    DaiUsds->>XDaiForeignBridge: Approve USDS
+    XDaiForeignBridge->>XDaiForeignBridge: Lock USDS as collateral
+    XDaiForeignBridge-->>GnosisChain: Bridging process
+    GnosisChain->>Receiver: receive xDAI
+    end
+
+    %% Claim DAI Flow
+    par
+    Note over User,Receiver: Claim DAI
+    User->>BridgeRouter: executeSignatures(message, signatures)
+    BridgeRouter->>XDaiForeignBridge: executeSignatures(message, signatures)
+    XDaiForeignBridge->>DaiUsds: swapUsdsToDai()
+    XDaiForeignBridge->>User: Transfer DAI to receiver
+    end
+
+    %% Relay USDS Flow
+    par
+    Note over User,Receiver: Relay USDS
+    User->>BridgeRouter: USDS.approve(BridgeRouter, amount)
+    User->>BridgeRouter: relayTokens(USDS, receiver, amount)
+    BridgeRouter->>XDaiForeignBridge: Direct transfer of USDS
+    XDaiForeignBridge->>XDaiForeignBridge: Lock USDS as collateral
+    XDaiForeignBridge-->>GnosisChain: Bridging process
+    GnosisChain->>Receiver: receive xDAI
+    end
+
+    %% Claim USDS Flow
+    par
+    Note over User,Receiver: Claim USDS
+    User->>BridgeRouter: executeSignaturesUSDS(message, signatures)
+    BridgeRouter->>XDaiForeignBridge: executeSignaturesUSDS(message, signatures)
+    XDaiForeignBridge->>User: Transfer USDS to receiver
+    end
+
+```
 
 **Relay DAI**
 
