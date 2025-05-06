@@ -10,6 +10,7 @@
 - [Contracts overview](#contracts)
 - [Interact with contracts](#interact-with-the-contracts)
 - [Call to Action: Update your code](#call-to-action-update-your-code)
+- [Test with post migration environment](#how-to-test-with-post-migration-environment)
 
 ## General overview
 
@@ -62,6 +63,8 @@ forge test --fork-url $RPC_MAINNET
 ```sh
 ./test/foundry/forkTest.sh
 ```
+
+For more details about testing, please check [this repository](https://github.com/gnosischain/xdaiBridge-usds-migration-test)
 
 ### Deploy
 
@@ -132,6 +135,11 @@ Transitional contracts during migration
 3. Calling XDaiForeignBridge's `executeSignaturesUSDS` and BridgeRouter's `executeSignaturesUSDS` will **receive USDS** post upgrade, while BridgeRouter's executeSignaturesUSDS will **revert** pre upgrade.
 
 > User/Third party application **SHOULD** interact with BridgeRouter contract instead of xDAI bridge contract
+
+## Audits
+
+1. [Omega](./docs/audits/xdai-bridge-usds-upgrade-omega.pdf)
+2. [Gnosis Ltd](./docs/audits/xdai-bridge-usds-upgrade-gnosis.pdf)
 
 ### Contract addresses
 
@@ -589,3 +597,16 @@ To modify your existing smart contract code to work with the xDAI bridge after U
    // or to claim USDS after the migration
    BridgeRouter.executeSignaturesUSDS(bytes message, bytes signatures)
 ```
+
+# How to test with post migration environment
+
+To simulate the actual mainnet environment, we use [Tenderly Virtual TestNets](https://tenderly.co/virtual-testnets) for both Ethereum and Gnosis Chain. Third-party applications are encouraged to use the following RPC endpoints to simulate the post-migration environment.
+
+**Switch your RPC**:
+
+1. Ethereum: https://virtual.mainnet.rpc.tenderly.co/f7d3ce08-c1ea-42da-87f1-4a40f335dda9
+
+   - Explorer: https://dashboard.tenderly.co/explorer/vnet/f7d3ce08-c1ea-42da-87f1-4a40f335dda9/transactions
+
+2. Gnosis Chain: https://virtual.gnosis.rpc.tenderly.co/c9ef8faf-bac8-40d0-8530-ded119b8012a
+   - Explorer: https://dashboard.tenderly.co/explorer/vnet/c9ef8faf-bac8-40d0-8530-ded119b8012a/transactions
