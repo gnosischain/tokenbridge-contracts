@@ -21,6 +21,9 @@ contract HomeBridgeErcToNative is
     BlockRewardBridge
 {
     bytes32 internal constant TOTAL_BURNT_COINS = 0x17f187b2e5d1f8770602b32c1159b85c9600859277fae1eaa9982e9bcf63384c; // keccak256(abi.encodePacked("totalBurntCoins"))
+    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address internal constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
+    address public usdsDepositContract;
 
     function() public payable {
         require(msg.data.length == 0);
@@ -45,8 +48,20 @@ contract HomeBridgeErcToNative is
         }
         setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
+        address tokenAddress = DAI;
+        if (msg.sender == usdsDepositContract) {
+            tokenAddress = USDS;
+        }
+        _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(_receiver, valueToTransfer, tokenAddress);
+    }
 
-        _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(_receiver, valueToTransfer);
+    function setUSDSDepositContract(address _contract) external onlyRelevantSender {
+        uint256 size;
+        assembly {
+            size := extcodesize(_contract)
+        }
+        require(size > 0 && _contract != address(0));
+        usdsDepositContract = _contract;
     }
 
     function relayTokens(address _receiver) external payable {
@@ -200,7 +215,7 @@ contract HomeBridgeErcToNative is
     function onSignaturesCollected(bytes _message) internal {
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            (, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
+            (, uint256 amount, bytes32 txHash,,) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager, txHash);
         }

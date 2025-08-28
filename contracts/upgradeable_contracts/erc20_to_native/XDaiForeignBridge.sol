@@ -104,37 +104,9 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
     }
 
     /**
-     * @dev Validates provided signatures and relays a given message, recipient should receive USDS
-     * @param message bytes to be relayed
-     * @param signatures bytes blob with signatures to be validated
-     */
-    function executeSignaturesUSDS(bytes message, bytes signatures) external {
-        Message.hasEnoughValidSignatures(message, signatures, validatorContract(), false);
-
-        address recipient;
-        uint256 amount;
-        bytes32 nonce;
-        address contractAddress;
-        (recipient, amount, nonce, contractAddress) = Message.parseMessage(message);
-        if (withinExecutionLimit(amount)) {
-            require(contractAddress == address(this));
-            require(!relayedMessages(nonce));
-            setRelayedMessages(nonce, true);
-
-            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, amount, nonce));
-            if (HASHI_IS_ENABLED && HASHI_IS_MANDATORY) require(isApprovedByHashi(hashMsg));
-
-            require(onExecuteMessageUSDS(recipient, amount, nonce));
-            emit RelayedMessage(recipient, amount, nonce);
-        } else {
-            onFailedMessage(recipient, amount, nonce);
-        }
-    }
-    /**
      * @dev Withdraws the USDS tokens if they are mistakenly sent to this contract after the Hashi integration, as the Transfer event will no longer be supported.
      * @param _to address of the tokens/coins receiver.
      */
-
     function recoverLegacyTransfer(address _to, uint256 recoverAmount) external onlyIfUpgradeabilityOwner {
         uint256 currentBalance = ERC20(USDS).balanceOf(this);
         uint256 minThreshold = minCashThreshold(USDS);
@@ -147,26 +119,25 @@ contract XDaiForeignBridge is ForeignBridgeErcToNative, SavingsDaiConnector, GSN
         ERC20(USDS).transfer(_to, recoverAmount);
     }
 
-    /// @dev this function always transfer DAI to _recipient
-    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
+    /// @dev this function returns DAI/USDS based on _tokenAddress
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32, /*_nonce*/ address _tokenAddress)
+        internal
+        returns (bool)
+    {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
 
         ERC20 token = ERC20(USDS);
         ensureEnoughTokens(token, _amount);
 
-        ERC20(USDS).approve(DAI_USDS, _amount);
-        IDaiUsds(DAI_USDS).usdsToDai(address(this), _amount);
-        return ERC20(DAI).transfer(_recipient, _amount);
-    }
-
-    /// @dev this function always transfer USDS to _recipient
-    function onExecuteMessageUSDS(address _recipient, uint256 _amount, bytes32 /*_nonce*/ ) internal returns (bool) {
-        addTotalExecutedPerDay(getCurrentDay(), _amount);
-
-        ERC20 token = ERC20(USDS);
-        ensureEnoughTokens(token, _amount);
-
-        return token.transfer(_recipient, _amount);
+        if (_tokenAddress == DAI) {
+            token.approve(DAI_USDS, _amount);
+            IDaiUsds(DAI_USDS).usdsToDai(address(this), _amount);
+            return ERC20(DAI).transfer(_recipient, _amount);
+        } else if (_tokenAddress == USDS) {
+            return token.transfer(_recipient, _amount);
+        } else {
+            revert();
+        }
     }
 
     function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {

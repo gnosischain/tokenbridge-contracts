@@ -3,6 +3,20 @@
 > > After the migration, xDAI Foreign Bridge take USDS as collateral instead of DAI.  
 > > Background: https://forum.gnosis.io/t/gip-118-should-sdai-be-replaced-by-susds-in-the-bridge/9354
 
+> To address a potential front-running issue\* from the previous design, a new implementation has been introduced. The key changes includes:
+
+1. New USDS deposit contract on Gnosis Chain
+2. `token` parameter is introduced in the `UserRequestForSignatures` event.
+3. The `executeSignaturesUSDS` function is removed from the BridgeRouter and XdaiForeignBridge contract.
+
+Target audiences:
+
+1. 3rd party applications: please refer to [Call To Action](#call-to-action-update-your-code).
+2. User: No action required.
+3. Bridge validator: update the validator image to latest version(WIP).
+
+\*refer to Omega audit XDFB1.
+
 ## Table of Contents
 
 - [General Overview](#general-overview)
@@ -18,17 +32,23 @@
 
 ### Key Changes for Third-Party Applications:
 
-- Third-party applications **must integrate** with the new **Bridge Router contract** after it has been deployed on Ethereum, with timeline for **1 month**.
+Etherum -> Gnosis Chain
+
+- Third-party applications **must integrate** with the new **Bridge Router contract on Ethereum**.
 - The **Bridge Router** serves as the entry point for token relay transactions, routing them to the appropriate bridge contract on Gnosis Chain (**xDAI Bridge** or **Omnibridge**).
 - **DAI & USDS transactions must go through the Bridge Router.** Transactions sent directly to the xDAI Bridge on Ethereum will **fail** if they attempt to relay DAI after the upgrade.
 - **For tokens other than DAI & USDS**, using the Bridge Router is **optional**—third-party applications can continue interacting with Omnibridge directly.
 
+Gnosis Chain -> Ethereum
+
+- To get USDS on Ethereum, one **MUST** switch to USDSDepositContract on Gnosis Chain when initiating the transaction.
+- To get DAI on Ethereum, one **MUST** remain calling the Home xDAI Bridge as it is.
+- Third-party applications **MUST** update their indexer to index the new event format emitted from Gnosis Chain.
+- Claiming token on Ethereum remains the same function `executeSignatures(bytes memory message, bytes memory signatures)`. One can call it either on BridgeRouter or the XDaiForeignBridge contract on Ethereum.
+
 ### Transition Period:
 
-- Before the USDS upgrade on the xDAI Bridge, third-party applications have time to **adapt to the Bridge Router interface**.
-- By **specifying the token address** when relaying tokens through the Bridge Router, the system will **swap them accordingly** to the currently accepted token on the xDAI Bridge.
-
-More info on the GIP: https://forum.gnosis.io/t/gip-118-should-sdai-be-replaced-by-susds-in-the-bridge/9354
+- Before the USDS upgrade on the xDAI Bridge, third-party applications have time to **adapt to the Bridge Router interface, new USDS Deposit contract** and **update their indexer for new event signature on Gnosis Chain**.
 
 ## Dev
 
@@ -57,11 +77,8 @@ forge build
 
 ```sh
 source .env
-forge test --fork-url $RPC_MAINNET
-```
-
-```sh
-./test/foundry/forkTest.sh
+chmod +x ./test/foundry/fork-test.sh && ./test/foundry/fork-test.sh
+chmod +x ./test/foundry/e2e/e2e-test.sh && ./test/foundry/e2e/e2e-test.sh
 ```
 
 For more details about testing, please check [this repository](https://github.com/gnosischain/xdaiBridge-usds-migration-test)
@@ -88,13 +105,15 @@ npm run get-contract-keccak256
 
 The result will be written into `scripts/usds_migration/keccak256hash.json`.
 
-| Contract                                  | Contract Hash (keccak256)                                            |
-| ----------------------------------------- | -------------------------------------------------------------------- |
-| xDaiForeignBridge                         | `0x6e7ca817c9686c0ee3dbcd99e9d498d704fd3aae47c1fab98a6f81adaabff95b` |
-| BridgeRouter                              | `0xc4f7cdc0ec90c22bca996d328c7dc11e20ef11f017eedb8df3d9b6e035f560b4` |
-| XDaiBridgePeripheral                      | `0x3d5e7ff9da196691d2dc57c93036c7414b68d63921dce530c5747017ea39afb5` |
-| XDaiBridgePeripheralForDaiPreUsdsUpgrade  | `0x721cfb942f77f4b04de65a4dbb7b1686e2c363689c83de3bee58da3ab9ae0bb3` |
-| XDaiBridgePeripheralForUsdsPreUsdsUpgrade | `0x74284da7c9b250a0348d431981364bf4e82987ca93524f2c392ea2455fd1e8a9` |
+| Contract                                  | Contract Hash (keccak256) |
+| ----------------------------------------- | ------------------------- |
+| xDaiForeignBridge                         |                           |
+| BridgeRouter                              |                           |
+| XDaiBridgePeripheral                      |                           |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade  |                           |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade |                           |
+| HomeErcToNative                           |                           |
+| USDSDepositContract                       |                           |
 
 For details about the keccak256 of the contract, please check [Sourcify's doc](https://docs.sourcify.dev/docs/full-vs-partial-match/#full-perfect-matches) and [Solidity's doc](https://docs.soliditylang.org/en/latest/metadata.html)
 
@@ -107,6 +126,8 @@ For details about the keccak256 of the contract, please check [Sourcify's doc](h
 | XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol  | v0.8.25+commit.b61c2a91 | 10             |
 | XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol | v0.8.25+commit.b61c2a91 | 10             |
 | XDaiForeignBridge.sol                         | v0.4.24+commit.e67f0147 | 10             |
+| HomeErcToNative.sol                           | v0.4.24+commit.e67f0147 | 10             |
+| USDSDepositContract.sol                       | v0.8.25+commit.b61c2a91 | 10             |
 
 # Contracts Overview
 
@@ -114,6 +135,7 @@ For details about the keccak256 of the contract, please check [Sourcify's doc](h
 
 1. `BridgeRouter.sol`: An entry point for token transferring, abstracting relayTokens() for Omnibridge and xDAI bridge. Upgradeable with `TransparentUpgradeableProxy`.
 2. `XDaiBridgePeripheral.sol`: Peripheral contract to convert between DAI and USDS after bridge migration.
+3. `USDSDepositContract.sol`: Deposit contract to notify the bridge where the intended recieved token is USDS on Ethereum.
 
 Transitional contracts during migration
 
@@ -127,30 +149,30 @@ Transitional contracts during migration
 2. `XDaiForeignBridge.sol`: new function introduced
    1. `swapSDAIToUSDS`: one time function for bridge migration
    2. `executeSignaturesUSDS`: receive USDS instead of DAI
-
-## Changes
-
-1. After the migration, xDAI Foreign Bridge takes USDS as collateral instead of DAI.
-2. Calling XDaiForeignBridge's `executeSignatures` and BridgeRouter's `executeSignatures` will **always receive DAI**.
-3. Calling XDaiForeignBridge's `executeSignaturesUSDS` and BridgeRouter's `executeSignaturesUSDS` will **receive USDS** post upgrade, while BridgeRouter's executeSignaturesUSDS will **revert** pre upgrade.
-
-> User/Third party application **SHOULD** interact with BridgeRouter contract instead of xDAI bridge contract
+   3. Add token parameter in message parsing.
+3. `HomeErcToNative.sol`: token parameter is included in event `UserRequestForSignatures`, in `Message` library for parsing and encoding.
+4. `HomeOverdrawManagement.sol`: add token parameter in `fixAssetsAboveLimits` function.
+5. `ErcToNativeBridgeHelper.sol`: add token parameter to `getMessageHash` function.
 
 ## Audits
+
+> > Original audit reports from the previous design.
 
 1. [Omega](./docs/audits/xdai-bridge-usds-upgrade-omega.pdf)
 2. [Gnosis Ltd](./docs/audits/xdai-bridge-usds-upgrade-gnosis.pdf)
 
 ### Contract addresses
 
-| Contract                                   | Chain    | Address                                      |
-| ------------------------------------------ | -------- | -------------------------------------------- |
-| BridgeRouter Proxy                         | Ethereum | `0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0` |
-| BridgeRouter Implementation                | Ethereum | `0x691c025Efa7ea1c87DF256F2Da9208E5345D40b1` |
-| XDaiBridgePeripheral                       | Ethereum | `0x3b6669727927b934753B018EB421a84Ed4eb0a43` |
-| XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum | `0xF676cc15Eb6d15b794aeC65bC20052aFB53D9052` |
-| XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum | `0x7df0e6a8BA609A6cC3Ab2fA33D953a3B5584f10C` |
-| XDaiForeignBridge(Implementation Contract) | Ethereum | `0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77` |
+| Contract                                   | Chain        | Address                                      |
+| ------------------------------------------ | ------------ | -------------------------------------------- |
+| BridgeRouter Proxy                         | Ethereum     | `0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0` |
+| BridgeRouter Implementation                | Ethereum     | `0x691c025Efa7ea1c87DF256F2Da9208E5345D40b1` |
+| XDaiBridgePeripheral                       | Ethereum     | `0x3b6669727927b934753B018EB421a84Ed4eb0a43` |
+| XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum     | `0xF676cc15Eb6d15b794aeC65bC20052aFB53D9052` |
+| XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum     | `0x7df0e6a8BA609A6cC3Ab2fA33D953a3B5584f10C` |
+| XDaiForeignBridge(Implementation Contract) | Ethereum     | `0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77` |
+| HomeErcToNative.sol                        | Gnosis Chain |                                              |
+| USDSDepositContract.sol                    | Gnosis Chain |                                              |
 
 # Interacting with the contracts
 
@@ -367,37 +389,51 @@ Test for the upgrade procedures is written in [BridgeRouter.t.sol#upgradeBridgeA
 
 > > The function calls during the upgrade on BridgeProxy and Router is a bundled Safe transaction, that will be signed and executed by [bridge governors](https://docs.gnosischain.com/bridges/management/#bridge-governance).
 
-**Call on xDAI Foreign Bridge contract**
+**Call on bridge contracts**
 
-XDaiForeignBridgeProxy=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
+ethereumXdaiBridgeProxy=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
+gnosisChainXdaiBridgeProxy = `0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6`
+ethereumBridgeOwner= `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
+gnosisChainBridgeOwner= `0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd`
 
-Caller: Bridge Owner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
+- Ethereum
 
 ```solidity
    uint256 initialVersion = 9
    address newImpl = 0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77
-   bridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
+   ethereumXdaiBridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
 
    // disable interested for DAI and swap sDAI -> sUSDS
-   bridgeProxy.swapSDAIToUSDS();
-   bridgeProxy.initializeInterest(
+   ethereumXdaiBridgeProxy.swapSDAIToUSDS();
+   ethereumXdaiBridgeProxy.initializeInterest(
       address(USDS): 0xdC035D45d973E3EC169d2276DDab16f1e407384F,
       minCashThreshold: 1000000000000000000000000,
       minInterestPaid: 1000000000000000000000,
       gnosisInterestReceiver: 0x670daeaF0F1a5e336090504C68179670B5059088
    );
-   bridgeProxy.invest(address(USDS));
+   ethereumXdaiBridgeProxy.invest(address(USDS));
 ```
 
-**Update routes on BridgeRouter**
+- Gnosis Chain
+
+```solidity
+   uint256 initialVersion = 6
+   address newImpl = // TODO
+   address usdsDepositContract = // TODO
+   gnosisChainXdaiBridgeProxy.upgradeToAndcall(initialVersion + 1, address(newImpl), abi.encodeWithSignatures("setUSDSDepositContract(address)", usdsDepositContract));
+```
+
+**Upgrade BrigeRouter implementation and Update routes**
 
 Caller: BridgeRouterOwner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6` (same as the bridge owner)
 
 ROUTER_ADDRESS=0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0
+ProxyAdminContract=0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd
 XDAI_BRIDGE_PERIPHERAL=0x3b6669727927b934753B018EB421a84Ed4eb0a43
 XDAI_FOREIGNBRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
 
 ```solidity
+proxyAdminContract.upgradeAndCall(ROUTER_ADDRESS,newImplementation, "");
 router.setRoute(address(DAI), address(xDAIBridgeperipheral));
 router.setRoute(address(USDS), xDAIForeignBridgeProxy);
 ```
@@ -449,8 +485,7 @@ graph TD
 
 
     subgraph "XDaiForeignBridge Contact"
-        XDaiForeignBridge[XDaiForeignBridge] -->|exeucteSignatures| DAI[unlock DAI to recipient]
-        XDaiForeignBridge[XDaiForeignBridge] -->|exeucteSignaturesUSDS| Ethereum[unlock USDS to recipient]
+        XDaiForeignBridge[XDaiForeignBridge] -->|exeucteSignatures| DAI_USDS[unlock USDS / swap USDS to DAI to recipient]
 
     end
 
@@ -458,31 +493,25 @@ graph TD
         ForeignAMB[ForeignAMB] --> Action[Unlock token to recipient]
     end
 
-    %% For claim operations (pre-upgrade)
+    %% For claim operations
     User -->|executeSignatures| BridgeRouter
-    User -->|executeSignaturesUSDS| BridgeRouter
     User -->|safeExecuteSignaturesWithAutoGasLimit| BridgeRouter
     BridgeRouter -->|executeSignatures| XDaiForeignBridge
-    BridgeRouter -->|executeSignaturesUSDS| XDaiForeignBridge
     BridgeRouter -->|safeExecuteSignaturesWithAutoGasLimit| ForeignAMB[Foreign AMB]
 
 ```
 
 1. `BridgeRouter.relayTokens(address token, address recipient, uint256 amount)`  
    -> When token is DAI / USDS from Ethereum, receive xDAI on GC.  
-   -> When token is other tokens from Ethereum, receive the bridged version token on GC.
+   -> When token is other tokens from Ethereum, receive the bridged version token on GC through Omnibridge.
 2. `BridgeRouter.executeSignatures(bytes memory message, bytes memory signatures)`  
-   -> claim DAI on Ethereum
-3. `BridgeRouter.executeSignaturesUSDS(bytes memory message, bytes memory signatures)`  
-   -> claim USDS on Ethereum
-4. `BridgeRouter.safeExecuteSignaturesWithAutoGasLimit(bytes memory message, bytes memory signatures)`  
+   -> Call xDAIForeignBridge.executeSignatures
+3. `BridgeRouter.safeExecuteSignaturesWithAutoGasLimit(bytes memory message, bytes memory signatures)`  
    -> claim token from Omnibridge
-5. `xDAIForeignBridge.relayTokens(address recipient, uint256 amount)`  
+4. `xDAIForeignBridge.relayTokens(address recipient, uint256 amount)`  
    -> relay USDS from Ethereum, receive xDAI on GC
-6. `xDAIForeignBridge.executeSignatures(bytes memory message, bytes memory signatures)`  
-   -> claim DAI on Ethereum
-7. `xDAIForeignBridge.executeSignaturesUSDS(bytes memory message, bytes memory signatures)`  
-   -> claim USDS on Ethereum
+5. `xDAIForeignBridge.executeSignatures(bytes memory message, bytes memory signatures)`  
+   -> claim DAI / swap USDS->DAI on Ethereum
 
 ### Function Callflow
 
@@ -541,8 +570,8 @@ sequenceDiagram
     %% Claim USDS Flow
     par
     Note over User,Receiver: Claim USDS
-    User->>BridgeRouter: executeSignaturesUSDS(message, signatures)
-    BridgeRouter->>XDaiForeignBridge: executeSignaturesUSDS(message, signatures)
+    User->>BridgeRouter: executeSignatures(message, signatures)
+    BridgeRouter->>XDaiForeignBridge: executeSignatures(message, signatures)
     XDaiForeignBridge->>User: Transfer USDS to receiver
     end
 
@@ -569,12 +598,16 @@ sequenceDiagram
 
 **Claim USDS**
 
-1. [BridgeRouter.executeSignaturesUSDS(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L107)  
-   -> [xDAIForeigbBridge.executeSignaturesUSDS(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L113)
+1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L107)  
+   -> [xDAIForeigbBridge.executeSignatures(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L113)
 
-# Call to Action: Update your code
+# Call to Action: Update your code & indexer
 
 To modify your existing smart contract code to work with the xDAI bridge after USDS migration, complete the following changes:
+
+## Contract Interface
+
+Ethereum -> Gnosis Chain
 
 ### Relay tokens
 
@@ -594,19 +627,47 @@ To modify your existing smart contract code to work with the xDAI bridge after U
 
   <<< Latest
    BridgeRouter.executeSignatures(bytes message, bytes signatures)
-   // or to claim USDS after the migration
-   BridgeRouter.executeSignaturesUSDS(bytes message, bytes signatures)
 ```
+
+Gnosis Chain -> Ethereum
+
+### Relay tokens
+
+```solidity
+  >>> Previous
+  HomeBridgeErcToNative.relayTokens{value: msg.value}(address recipient)
+  HomeBridgeErcToNative.call{value: msg.value}("")
+
+  <<< Latest
+  // Get DAI on Ethereum
+  HomeBridgeErcToNative.relayTokens{value: msg.value}(address recipient)
+  // Get DAI on Ethereum
+  HomeBridgeErcToNative.call{value: msg.value}("")
+  // Get USDS on Ethereum
+  USDSDepositContract.relayTokens{value: msg.value}(address recipient)
+  // Get USDS on Ethereum
+  USDSDepositContract.call{value: msg.value}("")
+```
+
+## Event signature
+
+```solidity
+    >>> Previous
+    event UserReuqestForSignatures(address recipient, uint256 value, bytes32 nonce);
+
+    <<< Latest
+    event UserReuqestForSignatures(address recipient, uint256 value, bytes32 nonce, address token);
+```
+
+# Glossary
+
+1. BridgeRouter: Entry point contract after the migration on Ethereum, facilitating routing and token swapping. [0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0](https://etherscan.io/address/0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0)
+2. xDAIForeignBridge: xDAI bridge on Ethereum. [0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016](https://etherscan.io/address/0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016#readProxyContract)
+3. HomeBridgeErcToNative / xDAI Home Bridge: xDAI bridge on Gnosis Chain. [0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6](https://gnosis.blockscout.com/address/0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6#address-tabs)
+4. USDSDepositContract: Deposit contract on Gnosis Chain that acts as an entry point contract if user wants to receive USDS on Ethereum.
+5. Foreign Chain: Ethereum
+6. Home Chain: Gnosis Chain
 
 # How to test with post migration environment
 
-To simulate the actual mainnet environment, we use [Tenderly Virtual TestNets](https://tenderly.co/virtual-testnets) for both Ethereum and Gnosis Chain. Third-party applications are encouraged to use the following RPC endpoints to simulate the post-migration environment.
-
-**Switch your RPC**:
-
-1. Ethereum: https://virtual.mainnet.rpc.tenderly.co/f7d3ce08-c1ea-42da-87f1-4a40f335dda9
-
-   - Explorer: https://dashboard.tenderly.co/explorer/vnet/f7d3ce08-c1ea-42da-87f1-4a40f335dda9/transactions
-
-2. Gnosis Chain: https://virtual.gnosis.rpc.tenderly.co/c9ef8faf-bac8-40d0-8530-ded119b8012a
-   - Explorer: https://dashboard.tenderly.co/explorer/vnet/c9ef8faf-bac8-40d0-8530-ded119b8012a/transactions
+// TODO

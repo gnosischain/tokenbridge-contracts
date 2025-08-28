@@ -77,14 +77,8 @@ contract BridgeRouter is OwnableUpgradeable {
     /// @param message bytes to be relayed
     /// @param signatures signatures to be validated
     function executeSignatures(bytes memory message, bytes memory signatures) external {
-        if (message.length == 104) {
-            // xdai bridge
-            // should always receive DAI
-            IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
-        } else {
-            // amb & omnibridge
-            IForeignBridge(FOREIGN_AMB).safeExecuteSignaturesWithAutoGasLimit(message, signatures);
-        }
+        // using message.length == 104 || message.length == 124 is no longer valid because AMB message could also be 124
+        IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
     }
 
     /// @notice Validates provided signatures and relays a given AMB message.
@@ -93,19 +87,6 @@ contract BridgeRouter is OwnableUpgradeable {
     /// @param signatures signatures to be validated
     function safeExecuteSignaturesWithAutoGasLimit(bytes memory message, bytes memory signatures) external {
         IForeignBridge(FOREIGN_AMB).safeExecuteSignaturesWithAutoGasLimit(message, signatures);
-    }
-
-    /// @notice Claim USDS function
-    /// @dev This function should revert before the xDAI bridge USDS upgrade
-    /// @param message bytes to be relayed
-    /// @param signatures signatures to be validated
-    function executeSignaturesUSDS(bytes memory message, bytes memory signatures) external {
-        if (IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).erc20token() == DAI) {
-            // should revert if the bridge is not upgraded to USDS
-            revert ClaimUsdsNotSupported();
-        } else {
-            IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignaturesUSDS(message, signatures);
-        }
     }
 
     /// @notice Allows to transfer any locked token from this contract.

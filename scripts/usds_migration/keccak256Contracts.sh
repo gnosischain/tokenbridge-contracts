@@ -6,6 +6,7 @@
 # XDaiBridgePeripheral
 # XDaiBridgePeripheralForDaiPreUsdsUpgrade
 # XDaiBridgePeripheralForUsdsPreUsdsUpgrade
+# HomeBridgeErcToNative
 
 
 
@@ -32,7 +33,7 @@ XDaiBridgePeripheral_json="out/XDaiBridgePeripheral.sol/XDaiBridgePeripheral.jso
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_json="out/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol/XDaiBridgePeripheralForDaiPreUsdsUpgrade.json"
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json="out/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.json"
 TransparentUpgradeableProxy_json="out/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json"
-
+HomeBridgeErcToNative_json="out/HomeBridgeErcToNative.sol/HomeBridgeErcToNative.json"
 
 # Extract  keccak256
 XDaiBridge_keccak256=$(jq -r '.metadata.sources["contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol"].keccak256' "$XDaiForeignBridge_json")
@@ -41,6 +42,7 @@ XDaiBridgePeripheral_keccak256=$(jq -r '.metadata.sources["contracts/upgradeable
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_keccak256=$(jq -r '.metadata.sources["contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol"].keccak256' "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_json")
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_keccak256=$(jq -r '.metadata.sources["contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol"].keccak256' "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json")
 TransparentUpgradeableProxy_keccak256=$(jq -r '.metadata.sources["lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol"].keccak256' "$TransparentUpgradeableProxy_json")
+HomeBridgeErcToNative_keccak256=$(jq -r '.metadata.sources["contracts/upgradeable_contracts/erc20_to_native/HomeErcToNative.sol"].keccak256' "$HomeBridgeErcToNative_json")
 
 cat <<EOF > scripts/usds_migration/keccak256hash.json
 {
@@ -49,7 +51,8 @@ cat <<EOF > scripts/usds_migration/keccak256hash.json
   "XDaiBridgePeripheral keccak256": "$XDaiBridgePeripheral_keccak256",
   "XDaiBridgePeripheralForDaiPreUsdsUpgrade keccak256": "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_keccak256",
   "XDaiBridgePeripheralForUsdsPreUsdsUpgrade keccak256": "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_keccak256",
-  "TransparentUpgradeableProxy keccak256": "$TransparentUpgradeableProxy_keccak256"
+  "TransparentUpgradeableProxy keccak256": "$TransparentUpgradeableProxy_keccak256",
+  "HomeBridgeErcToNative keccak256": "$HomeBridgeErcToNative_keccak256"
 }
 EOF
 

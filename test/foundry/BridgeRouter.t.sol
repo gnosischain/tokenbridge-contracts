@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT 
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "forge-std/console.sol";
@@ -18,6 +18,8 @@ import {XDaiBridgePeripheralForUsdsPreUsdsUpgrade} from
     "../../contracts/upgradeable_contracts/erc20_to_native/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol";
 import {IOmnibridge} from "./interfaces/IOmnibridge.sol";
 
+// Require fork-url to run the test on Ethereum
+// Run forge test --match-contract BridgeRouterTest --fork-url $RPC_MAINNET
 contract BridgeRouterTest is SetupTest {
     BridgeRouter router;
     XDaiBridgePeripheral peripheral;
@@ -29,10 +31,9 @@ contract BridgeRouterTest is SetupTest {
     address public FOREIGN_AMB = 0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e;
     address public FOREIGN_XDAIBRIDGE = 0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016;
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     bytes32 implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
     bytes32 adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
-
-    error ClaimUsdsNotSupported();
 
     function setUp() public payable override {
         super.setUp();
@@ -64,6 +65,7 @@ contract BridgeRouterTest is SetupTest {
         vm.stopPrank();
     }
 
+
     function testRouterMetadata() public {
         // Pre USDS bridge upgrade
         assertEq(router.tokenRoutes(address(DAI)), address(peripheralForDAIPreUSDSUpgrade));
@@ -85,7 +87,7 @@ contract BridgeRouterTest is SetupTest {
 
         // To make sure the same address can be used for proxy owner and the router owner
         vm.prank(bridgeOwner);
-        router.setRoute(address(DAI),address(peripheralForDAIPreUSDSUpgrade));
+        router.setRoute(address(DAI), address(peripheralForDAIPreUSDSUpgrade));
 
         implementationSlot = vm.load(address(routerProxy), ERC1967Utils.IMPLEMENTATION_SLOT);
         adminSlot = vm.load(address(routerProxy), ERC1967Utils.ADMIN_SLOT);
@@ -259,71 +261,14 @@ contract BridgeRouterTest is SetupTest {
         assertEq(weth.balanceOf(FOREIGN_OMNIBRIDGE), omniinitialBridgeBalancePost + amount);
     }
 
-    function testFuzzExecuteSignaturesPreUpgradeAmountLeBridgeBalance(uint256 amount) public {
-        uint256 initialAliceUSDSBalancePre = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePre = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
-
-        amount = bound(amount, 1 ether, initialBridgeDAIBalancePre);
-        vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            bytes32(uint256(20000000)), // nonce
-            bridgeAddress,
-            validatorPk
-        );
-
-        vm.prank(alice);
-        router.executeSignatures(message, signatures);
-
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePre + amount);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePre);
-        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
-        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePre - amount);
-    }
-
-    function testFuzzExecuteSignaturesPreUpgradeAmountGtBridgeBalance(uint256 amount) public {
-        uint256 minCashThreshold = bridge.minCashThreshold(address(DAI));
-        uint256 initialAliceUSDSBalancePre = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePre = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePre = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePre = DAI.balanceOf(bridgeAddress);
-
-        amount = bound(
-            amount, initialBridgeDAIBalancePre + 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress)
-        );
-        vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            bytes32(uint256(20000000)), // nonce
-            bridgeAddress,
-            validatorPk
-        );
-
-        vm.prank(alice);
-        router.executeSignatures(message, signatures);
-
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePre + amount);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePre);
-        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePre);
-        assertEq(DAI.balanceOf(bridgeAddress), minCashThreshold);
-    }
-
-    function testFuzzExecuteSignaturesPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
+    function testFuzzExecuteSignaturesForDAIAmountLeBridgeBalance(uint256 amount) public {
         upgradeBridgeAndSetupRoute();
-        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
 
-        amount = bound(amount, 1 ether, initialBridgeUSDSBalancePost);
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalance);
         vm.assume(bridge.withinExecutionLimit(amount));
 
         (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
@@ -331,30 +276,88 @@ contract BridgeRouterTest is SetupTest {
             amount,
             bytes32(uint256(20000000)), // nonce
             bridgeAddress,
-            validatorPk
+            address(DAI),
+            validatorPk,
+            true
         );
 
         vm.prank(alice);
         router.executeSignatures(message, signatures);
 
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost + amount);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost);
-        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
-        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost - amount);
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalance - amount);
     }
 
-    function testFuzzExecuteSignaturesPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
+    function testFuzzExecuteSignaturesForDAIWithOldXdaiMsgAmountLeBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalance);
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            address(0),
+            validatorPk,
+            true
+        );
+
+        vm.prank(alice);
+        router.executeSignatures(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalance - amount);
+    }
+
+    function testFuzzExecuteSignaturesForUSDSAmountLeBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(amount, 1 ether, initialBridgeUSDSBalance);
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            address(USDS),
+            validatorPk,
+            true
+        );
+
+        vm.prank(alice);
+        router.executeSignatures(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance + amount);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance);
+        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalance - amount);
+    }
+
+    function testFuzzExecuteSignaturesForDAIAmountGtBridgeBalance(uint256 amount) public {
         upgradeBridgeAndSetupRoute();
         uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
-        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
 
         amount = bound(
-            amount,
-            initialBridgeUSDSBalancePost + 1 ether,
-            sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
         );
         vm.assume(bridge.withinExecutionLimit(amount));
 
@@ -363,76 +366,30 @@ contract BridgeRouterTest is SetupTest {
             amount,
             bytes32(uint256(20000000)), // nonce
             bridgeAddress,
-            validatorPk
+            address(DAI),
+            validatorPk,
+            true
         );
 
         vm.prank(alice);
         router.executeSignatures(message, signatures);
 
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost + amount);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost);
-        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance);
         assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold);
     }
 
-    function testFuzzExecuteSignaturesUSDSPreUpgrade(uint256 amount) public {
-        amount = bound(amount, 1 ether, sDAI.maxWithdraw(bridgeAddress) + DAI.balanceOf(bridgeAddress) - 10 ether);
-        vm.assume(bridge.withinExecutionLimit(amount));
-        addMockValidator();
-
-        // Pre USDS Upgrade
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            bytes32(uint256(20000000)), // nonce
-            bridgeAddress,
-            validatorPk
-        );
-
-        vm.prank(alice);
-        vm.expectRevert(ClaimUsdsNotSupported.selector);
-        router.executeSignaturesUSDS(message, signatures);
-    }
-
-    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountLeBridgeBalance(uint256 amount) public {
-        upgradeBridgeAndSetupRoute();
-        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
-
-        amount = bound(amount, 1 ether, initialBridgeUSDSBalancePost);
-        vm.assume(bridge.withinExecutionLimit(amount));
-
-        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
-            alice,
-            amount,
-            bytes32(uint256(20000000)), // nonce
-            bridgeAddress,
-            validatorPk
-        );
-
-        vm.prank(alice);
-        router.executeSignaturesUSDS(message, signatures);
-
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost + amount);
-        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
-        assertEq(USDS.balanceOf(bridgeAddress), initialBridgeUSDSBalancePost - amount);
-    }
-
-    function testFuzzExecuteSignaturesUSDSPostUpgradeAmountGtBridgeBalance(uint256 amount) public {
+    function testFuzzExecuteSignaturesForDAIWithOldXdaiMsgAmountGtBridgeBalance(uint256 amount) public {
         upgradeBridgeAndSetupRoute();
         uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
-        uint256 initialAliceUSDSBalancePost = USDS.balanceOf(alice);
-        uint256 initialAliceDAIBalancePost = DAI.balanceOf(alice);
-        uint256 initialBridgeUSDSBalancePost = USDS.balanceOf(bridgeAddress);
-        uint256 initialBridgeDAIBalancePost = DAI.balanceOf(bridgeAddress);
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
 
         amount = bound(
-            amount,
-            initialBridgeUSDSBalancePost + 1 ether,
-            sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
         );
         vm.assume(bridge.withinExecutionLimit(amount));
 
@@ -441,16 +398,76 @@ contract BridgeRouterTest is SetupTest {
             amount,
             bytes32(uint256(20000000)), // nonce
             bridgeAddress,
-            validatorPk
+            address(0),
+            validatorPk,
+            true
         );
 
         vm.prank(alice);
-        router.executeSignaturesUSDS(message, signatures);
+        router.executeSignatures(message, signatures);
 
-        assertEq(DAI.balanceOf(alice), initialAliceDAIBalancePost);
-        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalancePost + amount);
-        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalancePost);
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance + amount);
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance);
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance);
         assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold);
+    }
+
+    function testFuzzExecuteSignaturesForUSDSAmountGtBridgeBalance(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+        uint256 minCashThreshold = bridge.minCashThreshold(address(USDS));
+        uint256 initialAliceUSDSBalance = USDS.balanceOf(alice);
+        uint256 initialAliceDAIBalance = DAI.balanceOf(alice);
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+        uint256 initialBridgeDAIBalance = DAI.balanceOf(bridgeAddress);
+
+        amount = bound(
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            address(USDS),
+            validatorPk,
+            true
+        );
+        require(message.length == 124);
+
+        vm.prank(alice);
+        router.executeSignatures(message, signatures);
+
+        assertEq(DAI.balanceOf(alice), initialAliceDAIBalance, "1");
+        assertEq(USDS.balanceOf(alice), initialAliceUSDSBalance + amount, "2");
+        assertEq(DAI.balanceOf(bridgeAddress), initialBridgeDAIBalance, "3");
+        assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold, "4");
+    }
+
+    function testRevertIfExecuteSignaturesWithUnsupportedToken(uint256 amount) public {
+        upgradeBridgeAndSetupRoute();
+
+        uint256 initialBridgeUSDSBalance = USDS.balanceOf(bridgeAddress);
+
+        amount = bound(
+            amount, initialBridgeUSDSBalance + 1 ether, sUSDS.maxWithdraw(bridgeAddress) + USDS.balanceOf(bridgeAddress)
+        );
+        vm.assume(bridge.withinExecutionLimit(amount));
+
+        (bytes memory message, bytes memory signatures) = getMessageAndSignatures(
+            alice,
+            amount,
+            bytes32(uint256(20000000)), // nonce
+            bridgeAddress,
+            makeAddr("Token"),
+            validatorPk,
+            true
+        );
+
+        vm.prank(alice);
+        vm.expectRevert();
+        router.executeSignatures(message, signatures);
     }
 
     function testRecoverLockedFund(uint256 amount) public {
@@ -528,7 +545,7 @@ contract BridgeRouterTest is SetupTest {
         assertEq(address(router).balance, 0);
     }
 
-    /// The following function calls during the upgrade is a bundled Safe transaction, 
+    /// The following function calls during the upgrade is a bundled Safe transaction,
     /// that will be signed and executed by [bridge governors](https://docs.gnosischain.com/bridges/management/#bridge-governance)
     function upgradeBridgeAndSetupRoute() public {
         vm.startPrank(bridgeOwner);
@@ -536,9 +553,9 @@ contract BridgeRouterTest is SetupTest {
         router.setRoute(address(USDS), FOREIGN_XDAIBRIDGE);
         vm.stopPrank();
 
-        upgradeAndInitializeInterest();  
+        upgradeAndInitializeInterest();
         // In production, the upgrade stops here
-        // Adding mock validator here for testing purpose. 
+        // Adding mock validator here for testing purpose.
         // In production, the tx need to be signed by 4/7 [validators](https://docs.gnosischain.com/bridges/management/validators).
         addMockValidator();
     }

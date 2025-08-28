@@ -14,16 +14,18 @@ contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upg
     using SafeMath for uint256;
 
     /**
-    * @dev Fixes locked tokens, that were out of execution limits during the call to executeAffirmation.
-    * @param hashMsg reference for bridge operation that was out of execution limits.
-    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge.
-    * @param valueToUnlock unlocked amount of tokens, should be less than txAboveLimitsValue.
-    * Should be less than maxPerTx(), if tokens need to be unlocked on the other side.
-    */
-    function fixAssetsAboveLimits(bytes32 hashMsg, bool unlockOnForeign, uint256 valueToUnlock)
+     * @dev Fixes locked tokens, that were out of execution limits during the call to executeAffirmation.
+     * @param hashMsg reference for bridge operation that was out of execution limits.
+     * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge.
+     * @param valueToUnlock unlocked amount of tokens, should be less than txAboveLimitsValue.
+     * @param tokenAddress token address to receive on Ethereum
+     * Should be less than maxPerTx(), if tokens need to be unlocked on the other side.
+     */
+    function fixAssetsAboveLimits(bytes32 hashMsg, bool unlockOnForeign, uint256 valueToUnlock, address tokenAddress)
         external
-        onlyIfUpgradeabilityOwner
+       onlyIfUpgradeabilityOwner
     {
+        require(tokenAddress == 0x6B175474E89094C44Da98b954EedeAC495271d0F || tokenAddress == 0xdC035D45d973E3EC169d2276DDab16f1e407384F);
         uint256 signed = numAffirmationsSigned(hashMsg);
         require(!isAlreadyProcessed(signed));
         (address recipient, uint256 value) = txAboveLimits(hashMsg);
@@ -40,7 +42,9 @@ contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upg
                 uint256 fee = calculateFee(valueToUnlock, false, feeManager, HOME_FEE);
                 eventValue = valueToUnlock.sub(fee);
             }
-            _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(recipient, eventValue);
+            _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(
+                recipient, eventValue, tokenAddress
+            );
         }
     }
 

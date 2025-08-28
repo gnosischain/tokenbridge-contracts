@@ -6,6 +6,7 @@
 # XDaiBridgePeripheral
 # XDaiBridgePeripheralForDaiPreUsdsUpgrade
 # XDaiBridgePeripheralForUsdsPreUsdsUpgrade
+# HomeBridgeErcToNative
 
 
 
@@ -18,10 +19,11 @@ export NVM_DIR="$HOME/.nvm"
 
 
 nvm use
-npm cache clean --force
+# npm cache clean --force
 rm -rf node_modules
 npm install
 
+forge install
 forge build
 
 
@@ -32,7 +34,7 @@ XDaiBridgePeripheral_json="out/XDaiBridgePeripheral.sol/XDaiBridgePeripheral.jso
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_json="out/XDaiBridgePeripheralForDaiPreUsdsUpgrade.sol/XDaiBridgePeripheralForDaiPreUsdsUpgrade.json"
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json="out/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.json"
 TransparentUpgradeableProxy_json="out/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json"
-
+HomeBridgeErcToNative_json="out/HomeBridgeErcToNative.sol/HomeBridgeErcToNative.json"
 
 # Extract deployed bytecode
 XDaiBridge_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiForeignBridge_json")
@@ -41,6 +43,7 @@ XDaiBridgePeripheral_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePer
 XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_json")
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json")
 TransparentUpgradeableProxy_bytecode=$(jq -r '.deployedBytecode.object' "$TransparentUpgradeableProxy_json")
+HomeBridgeErcToNative_bytecode=$(jq -r '.deployedBytecode.object' "$HomeBridgeErcToNative_json")
 
 cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
 {
@@ -49,7 +52,8 @@ cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
   "XDaiBridgePeripheral deployedBytecode": "$XDaiBridgePeripheral_bytecode",
   "XDaiBridgePeripheralForDaiPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode",
   "XDaiBridgePeripheralForUsdsPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode"
-  "TransparentUpgradeableProxy deployedBytecode": "$TransparentUpgradeableProxy_bytecode"
+  "TransparentUpgradeableProxy deployedBytecode": "$TransparentUpgradeableProxy_bytecode",
+  "HomeErcToNative deployedBytecode": "$HomeBridgeErcToNative_bytecode"
 }
 EOF
 

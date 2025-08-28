@@ -11,10 +11,7 @@ import {IXDaiForeignBridge} from "./interfaces/IXDaiForeignBridge.sol";
 import {IBridgeValidators} from "./interfaces/IBridgeValidators.sol";
 
 contract SetupTest is Test {
-    address public initializer = 0x1B572dBCBBDA53e2A900D00d39c67292288E97c8;
-
-    address public alice;
-    uint256 alicePk;
+    address public alice = makeAddr("alice");
     address public bob = makeAddr("bob");
     address validator;
     uint256 validatorPk;
@@ -38,9 +35,7 @@ contract SetupTest is Test {
     uint256 public globalTime;
 
     function setUp() public payable virtual {
-        (validator, validatorPk) = makeAddrAndKey("newValidator");
-        (alice, alicePk) = makeAddrAndKey("alice");
-
+        (validator, validatorPk) = makeAddrAndKey("mockValidator");
         console.log("chainId %s", block.chainid);
         console.log("block %s", block.number);
 
@@ -56,7 +51,7 @@ contract SetupTest is Test {
         address overrideAddress = makeAddr("newXDaibridgeImpl");
         vm.etch(overrideAddress, newImplCode);
         assertEq(overrideAddress.code, newImplCode);
-        newImpl = IXDaiForeignBridge(makeAddr("newXDaibridgeImpl"));
+        newImpl = IXDaiForeignBridge(overrideAddress);
 
         uint256 size;
         address _a = address(newImpl);
@@ -66,7 +61,6 @@ contract SetupTest is Test {
         assertGt(size, 0);
         globalTime = block.timestamp;
 
-        vm.deal(initializer, 100 ether);
         vm.deal(bridgeOwner, 100 ether);
         vm.deal(proxyOwner, 100 ether);
         vm.deal(alice, 10000 ether);
@@ -86,7 +80,7 @@ contract SetupTest is Test {
         assertTrue(implInitialized);
     }
 
-    /// The following function calls during the upgrade on BridgeProxy need to be bundled with another two Router.setRoute calls in a bundled Safe transaction, 
+    /// The following function calls during the upgrade on BridgeProxy need to be bundled with another two Router.setRoute calls in a bundled Safe transaction,
     /// that will be signed and executed by [bridge governors](https://docs.gnosischain.com/bridges/management/#bridge-governance)
     /// Check BridgeRouter.t.sol#upgradeBridgeAndSetupRoute() for the complete calls during the upgrade
     function upgradeAndInitializeInterest() public {
@@ -134,30 +128,17 @@ contract SetupTest is Test {
         vm.stopPrank();
     }
 
-    // encode message for xDAI bridge
-    function encodeXdaiBridgeMessage(address recipient, uint256 amount, bytes32 nonce, address contractAddress)
-        public
-        pure
-        returns (bytes memory)
-    {
-        bytes memory message = new bytes(104);
-
-        assembly {
-            mstore(add(message, 20), recipient) // Store recipient at offset 20
-            mstore(add(message, 52), amount) // Store amount at offset 52
-            mstore(add(message, 84), nonce) // Store nonce at offset 84
-            mstore(add(message, 104), contractAddress) // Store contractAddress at offset 104
-        }
-
-        return message;
-    }
-
     function hashMessage(bytes memory message, bool isAMBMessage) public pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
         if (isAMBMessage) {
             return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
         } else {
-            string memory msgLength = "104";
+            string memory msgLength;
+            if (message.length == 104) {
+                msgLength = "104";
+            } else if (message.length == 124) {
+                msgLength = "124";
+            }
             return keccak256(abi.encodePacked(prefix, msgLength, message));
         }
     }
@@ -180,16 +161,37 @@ contract SetupTest is Test {
     }
 
     function getMessageAndSignatures(
-        address receiver,
-        uint256 amount,
-        bytes32 nonce,
-        address contractAddress,
-        uint256 signerPk
-    ) public pure returns (bytes memory message, bytes memory signatures) {
-        message = abi.encodePacked(receiver, amount, nonce, contractAddress);
-        // hashMessage(message, isAMBMessage)
-        bytes32 hashedMessage = hashMessage(message, false);
+        address _recipient,
+        uint256 _amount,
+        bytes32 _nonce,
+        address _contractAddress,
+        address _tokenAddress,
+        uint256 signerPk,
+        bool isForeign
+    ) public returns (bytes memory message, bytes memory signatures) {
+        if (_tokenAddress == address(0)) {
+            message = abi.encodePacked(_recipient, _amount, _nonce, _contractAddress);
+        } else {
+            message = abi.encodePacked(_recipient, _amount, _nonce, _contractAddress, _tokenAddress);
+        }
+
+        bytes memory prefix = "\x19Ethereum Signed Message:\n";
+        string memory msgLength;
+        if (message.length == 104) {
+            msgLength = "104";
+        } else if (message.length == 124) {
+            msgLength = "124";
+        }
+
+        bytes32 hashedMessage = keccak256(abi.encodePacked(prefix, msgLength, message));
+
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, hashedMessage);
-        signatures = abi.encodePacked(uint8(1), v, r, s);
+
+        assertEq(ecrecover(hashedMessage, v, r, s), validator);
+        if (isForeign) {
+            signatures = abi.encodePacked(uint8(1), v, r, s);
+        } else {
+            signatures = abi.encodePacked(r, s, v);
+        }
     }
 }
