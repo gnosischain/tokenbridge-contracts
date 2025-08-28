@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-RPC_MAINNET=$RPC_MAINNET
-RPC_GNOSIS=$RPC_GNOSIS
+
 # ========================= ETH -> GC ===========================
 echo "🚀 ETH bridge relayTokens -> GC bridge executeAffirmation"
 forge test  --match-test testRelayUSDSToBridge --fork-url $RPC_MAINNET 

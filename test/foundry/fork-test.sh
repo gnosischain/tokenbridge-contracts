@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-RPC_MAINNET=https://eth-mainnet.g.alchemy.com/v2/-nS9M81JxS_vHfz1wlWLIuSo0O6W_HMC
-RPC_GNOSIS=https://ancient-virulent-crater.xdai.quiknode.pro/31c54ce2d49aba7562061ea5dae0479ae512b677/
 
 echo "Running fork test on Ethereum"
 forge test --match-contract BridgeRouterTest --fork-url $RPC_MAINNET
