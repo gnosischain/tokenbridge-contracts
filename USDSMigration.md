@@ -186,7 +186,7 @@ router.setRoute(DAI,address(XDaiBridgePeripheralForDaiPreUsdsUpgrade));
 router.setRoute(USDS,address(XDaiBridgePeripheralForUsdsPreUsdsUpgrade));
 ```
 
-### Relay tokens
+### Relay tokens from Ethereum
 
 ```mermaid
 graph TD
@@ -221,7 +221,7 @@ graph TD
     end
 ```
 
-### To claim token
+### To claim token on Ethereum
 
 ```mermaid
 graph TD
@@ -440,7 +440,7 @@ router.setRoute(address(USDS), xDAIForeignBridgeProxy);
 
 ## After the upgrade
 
-### Relay token
+### Relay token from Ethereum
 
 ```mermaid
 graph TD
@@ -473,7 +473,19 @@ graph TD
     end
 ```
 
-### To claim token
+### Relay xDAI from Gnosis Chain
+
+```mermaid
+graph TD
+    User([User]) --> |send xDAI and want DAI| xDAIHomeBridge
+    User([User]) --> |send xDAI and want USDS| USDSDepositContract
+    USDSDepositContract --> xDAIHomeBridge
+    xDAIHomeBridge --> |emit new UserRequestForSignatures|Event[recipient, value, nonce, token]
+
+
+```
+
+### To claim token on Ethereum
 
 ```mermaid
 graph TD
@@ -529,7 +541,8 @@ sequenceDiagram
     box Gnosis Chain
 
         participant GnosisChain as xDaiHomeBridge on Gnosis Chain
-         participant Receiver
+        participant USDSDepositContract
+        participant Receiver
     end
 
 
@@ -565,6 +578,7 @@ sequenceDiagram
     XDaiForeignBridge->>XDaiForeignBridge: Lock USDS as collateral
     XDaiForeignBridge-->>GnosisChain: Bridging process
     GnosisChain->>Receiver: receive xDAI
+
     end
 
     %% Claim USDS Flow
@@ -573,6 +587,25 @@ sequenceDiagram
     User->>BridgeRouter: executeSignatures(message, signatures)
     BridgeRouter->>XDaiForeignBridge: executeSignatures(message, signatures)
     XDaiForeignBridge->>User: Transfer USDS to receiver
+    end
+
+     %% Relay xDAI  Flow
+    par
+    Note over User,Receiver: Relay xDAI and get DAI
+    User->>GnosisChain: xDaiHomeBridge.transfer{value:msg.value} or xDaiHomeBridge.relayTokens{value:msg.value}(recipient)
+    User ->> BridgeRouter: executeSignatures(message,recipient)
+    BridgeRouter ->> XDaiForeignBridge: executeSignatures(message,recipient)
+    XDaiForeignBridge ->> DaiUsds:  swapUsdsToDai()
+    XDaiForeignBridge ->> Receiver: transfer DAI
+    end
+
+      %% Relay xDAI  Flow
+    par
+    Note over User,Receiver: Relay xDAI and get USDS
+    User->>USDSDepositContract: USDSDepositContract.transfer{value:msg.value} or USDSDepositContract.relayTokens{value:msg.value}(recipient)
+    User ->> BridgeRouter: executeSignatures(message,recipient)
+    BridgeRouter ->> XDaiForeignBridge: executeSignatures(message,recipient)
+    XDaiForeignBridge ->> Receiver: unlock USDS
     end
 
 ```
@@ -600,6 +633,14 @@ sequenceDiagram
 
 1. [BridgeRouter.executeSignatures(message, signatures)](./contracts/upgradeable_contracts/erc20_to_native/BridgeRouter.sol#L107)  
    -> [xDAIForeigbBridge.executeSignatures(message,signatures)](./contracts/upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol#L113)
+
+**Relay xDAI and get DAI**
+
+1. xDAIHomeBridge.transfer{value: msg.value}("") or xDAIHomeBridge.relayTokens{value: msg.value}(address recipient)
+
+**Relay xDAI and get USDS**
+
+1. USDSDepositContract.transfer{value: msg.value}("") or USDSDepositContract.relayTokens{value: msg.value}(address recipient)
 
 # Call to Action: Update your code & indexer
 
