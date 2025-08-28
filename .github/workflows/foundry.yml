@@ -23,11 +23,11 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Yarn install
-        run: yarn
+      - name: npm install
+        run: nvm use && npm install
 
       - name: Install Foundry Dependencies
-        run: forge install
+        run: forge install && forge build
 
       - name: Run fork test on fork
         run: ./test/foundry/fork-test.sh
