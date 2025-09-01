@@ -19,8 +19,6 @@ contract BridgeRouter is OwnableUpgradeable {
     address public constant USDS = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
     address public constant WETH_OMNIBRIDGE_ROUTER = 0xa6439Ca0FCbA1d0F80df0bE6A17220feD9c9038a;
 
-    error ClaimUsdsNotSupported();
-
     mapping(address => address) public tokenRoutes;
 
     constructor() {
@@ -77,7 +75,6 @@ contract BridgeRouter is OwnableUpgradeable {
     /// @param message bytes to be relayed
     /// @param signatures signatures to be validated
     function executeSignatures(bytes memory message, bytes memory signatures) external {
-        // using message.length == 104 || message.length == 124 is no longer valid because AMB message could also be 124
         IXDaiForeignBridge(FOREIGN_XDAIBRIDGE).executeSignatures(message, signatures);
     }
 

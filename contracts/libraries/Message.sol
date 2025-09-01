@@ -33,7 +33,7 @@ library Message {
         pure
         returns (address recipient, uint256 amount, bytes32 nonce, address contractAddress, address tokenAddress)
     {
-        isMessageValid(message);
+        require(isMessageValid(message));
 
         assembly {
             recipient := mload(add(message, 20))
