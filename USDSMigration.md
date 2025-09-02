@@ -36,7 +36,7 @@ Etherum -> Gnosis Chain
 
 - Third-party applications **must integrate** with the new **Bridge Router contract on Ethereum**.
 - The **Bridge Router** serves as the entry point for token relay transactions, routing them to the appropriate bridge contract on Gnosis Chain (**xDAI Bridge** or **Omnibridge**).
-- **DAI & USDS transactions must go through the Bridge Router.** Transactions sent directly to the xDAI Bridge on Ethereum will **fail** if they attempt to relay DAI after the upgrade.
+- **DAI & USDS transactions must go through the Bridge Router.** Transactions sent directly to the xDAI Bridge on Ethereum will **fail** if they attempt to relay DAI after the upgrade, but they will succeed in relaying USDS provided the sender has approved USDS for the bridge (\*Check [Edge Case](#edge-case))
 - **For tokens other than DAI & USDS**, using the Bridge Router is **optional**—third-party applications can continue interacting with Omnibridge directly.
 
 Gnosis Chain -> Ethereum
@@ -640,6 +640,18 @@ sequenceDiagram
 **Relay xDAI and get USDS**
 
 1. USDSDepositContract.transfer{value: msg.value}("") or USDSDepositContract.relayTokens{value: msg.value}(address recipient)
+
+### Edge case
+
+1. After the upgrade, the xDAI Foreign Bridge assumes the sender wants to relay USDS.
+
+   - If a user intends to relay DAI, but still has an existing USDS allowance for the bridge, the bridge will use the USDS allowance and relay USDS instead of DAI.
+
+   - To avoid unintended relays:
+
+     - Always interact with the Bridge Router when relaying DAI.
+
+     - Approve only the exact amount of USDS you intend to relay, rather than leaving a large allowance.
 
 # Call to Action: Update your code & indexer
 
