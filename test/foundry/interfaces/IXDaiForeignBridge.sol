@@ -18,7 +18,6 @@ interface IXDaiForeignBridge {
     function disableInterest(address _token) external;
     function erc20token() external view returns (address);
     function executeSignatures(bytes memory message, bytes memory signatures) external;
-    function executeSignaturesUSDS(bytes memory message, bytes memory signatures) external;
     function executeSignaturesGSN(bytes memory message, bytes memory signatures, uint256 maxTokensFee) external;
     function executionDailyLimit() external view returns (uint256);
     function executionMaxPerTx() external view returns (uint256);

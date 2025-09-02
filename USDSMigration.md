@@ -148,8 +148,7 @@ Transitional contracts during migration
 1. `SavingsDaiConnector.sol`: `daiToken()` address is changed to USDS address, `sDaiToken()` address is changed to sUSDS address.
 2. `XDaiForeignBridge.sol`: new function introduced
    1. `swapSDAIToUSDS`: one time function for bridge migration
-   2. `executeSignaturesUSDS`: receive USDS instead of DAI
-   3. Add token parameter in message parsing.
+   2. Add token parameter in message parsing.
 3. `HomeErcToNative.sol`: token parameter is included in event `UserRequestForSignatures`, in `Message` library for parsing and encoding.
 4. `HomeOverdrawManagement.sol`: add token parameter in `fixAssetsAboveLimits` function.
 5. `ErcToNativeBridgeHelper.sol`: add token parameter to `getMessageHash` function.
