@@ -6,7 +6,7 @@
 > To address a potential front-running issue\* from the previous design, a new implementation has been introduced. The key changes includes:
 
 1. New USDS deposit contract on Gnosis Chain
-2. `token` parameter is introduced in the `UserRequestForSignatures` event.
+2. `token` parameter is introduced in the `UserRequestForSignature` event.
 3. The `executeSignaturesUSDS` function is removed from the BridgeRouter and XdaiForeignBridge contract.
 
 Target audiences:
@@ -149,7 +149,7 @@ Transitional contracts during migration
 2. `XDaiForeignBridge.sol`: new function introduced
    1. `swapSDAIToUSDS`: one time function for bridge migration
    2. Add token parameter in message parsing.
-3. `HomeErcToNative.sol`: token parameter is included in event `UserRequestForSignatures`, in `Message` library for parsing and encoding.
+3. `HomeErcToNative.sol`: token parameter is included in event `UserRequestForSignature`, in `Message` library for parsing and encoding.
 4. `HomeOverdrawManagement.sol`: add token parameter in `fixAssetsAboveLimits` function.
 5. `ErcToNativeBridgeHelper.sol`: add token parameter to `getMessageHash` function.
 
@@ -479,7 +479,7 @@ graph TD
     User([User]) --> |send xDAI and want DAI| xDAIHomeBridge
     User([User]) --> |send xDAI and want USDS| USDSDepositContract
     USDSDepositContract --> xDAIHomeBridge
-    xDAIHomeBridge --> |emit new UserRequestForSignatures|Event[recipient, value, nonce, token]
+    xDAIHomeBridge --> |emit new UserRequestForSignature|Event[recipient, value, nonce, token]
 
 
 ```
@@ -705,10 +705,12 @@ Gnosis Chain -> Ethereum
 
 ```solidity
     >>> Previous
-    event UserReuqestForSignatures(address recipient, uint256 value, bytes32 nonce);
+    // 0xbcb4ebd89690a7455d6ec096a6bfc4a8a891ac741ffe4e678ea2614853248658
+    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce);
 
     <<< Latest
-    event UserReuqestForSignatures(address recipient, uint256 value, bytes32 nonce, address token);
+    // 0xe1e0bc4a1db39a361e3589cae613d7b4862e1f9114dd3ff12ff45be395046968
+    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce, address token);
 ```
 
 # Glossary
