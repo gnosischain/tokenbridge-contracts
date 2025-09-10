@@ -435,6 +435,22 @@ contract USDSXDaiForeignBridgeTest is SetupTest {
         assertEq(USDS.balanceOf(bridgeAddress), minCashThreshold, "Bridge should have minCashThreshold of USDS");
     }
 
+    function testRevertExecuteSignaturesWithMismatchMessageLength() public{
+         upgradeAndInitializeInterest();
+        addMockValidator();
+
+        bytes32 nonce = bytes32(uint256(20000000));
+        uint256 amount = 10e18;
+       
+
+        (, bytes memory signatures) =
+            getMessageAndSignatures(alice, amount, nonce, bridgeAddress, address(USDS), validatorPk, true);
+
+        vm.prank(alice);
+        vm.expectRevert();
+        bridge.executeSignatures(bytes("0x"), signatures);
+    }
+
     function testFuzzRelayDAIAndClaimBack(uint256 amount) public {
         upgradeAndInitializeInterest();
         amount = bound(amount, bridge.minPerTx(), bridge.maxPerTx() - 1);

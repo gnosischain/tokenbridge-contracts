@@ -46,6 +46,7 @@ contract GSNForeignERC20Bridge is BasicForeignBridge, ERC20Bridge, BaseRelayReci
         address contractAddress;
         address tokenAddress;
         (recipient, amount, txHash, contractAddress, tokenAddress) = Message.parseMessage(message);
+        require(tokenAddress == address(erc20token()));
         if (withinExecutionLimit(amount)) {
             require(maxTokensFee <= amount);
             require(contractAddress == address(this));

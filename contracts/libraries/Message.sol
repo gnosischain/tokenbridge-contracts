@@ -86,6 +86,8 @@ library Message {
                 msgLength = "104";
             }else if(message.length == 124){
                 msgLength = "124";
+            }else{
+                revert();
             }
             return keccak256(abi.encodePacked(prefix, msgLength, message));
         }
