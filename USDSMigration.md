@@ -170,7 +170,7 @@ Transitional contracts during migration
 | XDaiBridgePeripheralForDaiPreUsdsUpgrade   | Ethereum     | `0xF676cc15Eb6d15b794aeC65bC20052aFB53D9052` |
 | XDaiBridgePeripheralForUsdsPreUsdsUpgrade  | Ethereum     | `0x7df0e6a8BA609A6cC3Ab2fA33D953a3B5584f10C` |
 | XDaiForeignBridge(Implementation Contract) | Ethereum     | `0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77` |
-| HomeErcToNative.sol                        | Gnosis Chain |                                              |
+| HomeErcToNative Implementation             | Gnosis Chain |                                              |
 | USDSDepositContract.sol                    | Gnosis Chain |                                              |
 
 # Interacting with the contracts
@@ -390,16 +390,16 @@ Test for the upgrade procedures is written in [BridgeRouter.t.sol#upgradeBridgeA
 
 **Call on bridge contracts**
 
-ethereumXdaiBridgeProxy=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
-gnosisChainXdaiBridgeProxy = `0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6`
-ethereumBridgeOwner= `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`
+ethereumXdaiBridgeProxy=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`  
+gnosisChainXdaiBridgeProxy = `0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6`  
+ethereumBridgeOwner= `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6`  
 gnosisChainBridgeOwner= `0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd`
 
 - Ethereum
 
 ```solidity
    uint256 initialVersion = 9
-   address newImpl = 0x3AbD91b5564BaF7966DcA7a30Bd50EAcc9aBeD77
+   address newImpl = // TODO
    ethereumXdaiBridgeProxy.upgradeTo(initialVersion + 1, address(newImpl));
 
    // disable interested for DAI and swap sDAI -> sUSDS
@@ -426,9 +426,9 @@ gnosisChainBridgeOwner= `0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd`
 
 Caller: BridgeRouterOwner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6` (same as the bridge owner)
 
-ROUTER_ADDRESS=0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0
-ProxyAdminContract=0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd
-XDAI_BRIDGE_PERIPHERAL=0x3b6669727927b934753B018EB421a84Ed4eb0a43
+ROUTER_ADDRESS=`0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0`
+ProxyAdminContract=`0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd`
+XDAI_BRIDGE_PERIPHERAL=`0x3b6669727927b934753B018EB421a84Ed4eb0a43`
 XDAI_FOREIGNBRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
 
 ```solidity
