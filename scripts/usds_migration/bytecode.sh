@@ -13,19 +13,6 @@
 # Exit on error
 set -e
 
-# Load NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-
-nvm use
-# npm cache clean --force
-rm -rf node_modules
-npm install
-
-forge install
-forge build
-
 
 # Paths to bytecode files
 XDaiForeignBridge_json="out/XDaiForeignBridge.sol/XDaiForeignBridge.json"

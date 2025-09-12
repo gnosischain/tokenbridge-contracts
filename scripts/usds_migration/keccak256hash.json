@@ -1,8 +1,9 @@
 {
-  "xDaiForeignBridge keccak256": "0x6e7ca817c9686c0ee3dbcd99e9d498d704fd3aae47c1fab98a6f81adaabff95b",
-  "BridgeRouter keccak256": "0xc4f7cdc0ec90c22bca996d328c7dc11e20ef11f017eedb8df3d9b6e035f560b4",
+  "xDaiForeignBridge keccak256": "0xbadd059fea2d7ab61bcd36db3418c6c73dca7a4fc02917ce5db2f78d962821f8",
+  "BridgeRouter keccak256": "0xab729fba35c9d369445f85c3556db5644eb7356228ed3fda441bff4e7e1eacb8",
   "XDaiBridgePeripheral keccak256": "0x3d5e7ff9da196691d2dc57c93036c7414b68d63921dce530c5747017ea39afb5",
   "XDaiBridgePeripheralForDaiPreUsdsUpgrade keccak256": "0x721cfb942f77f4b04de65a4dbb7b1686e2c363689c83de3bee58da3ab9ae0bb3",
   "XDaiBridgePeripheralForUsdsPreUsdsUpgrade keccak256": "0x74284da7c9b250a0348d431981364bf4e82987ca93524f2c392ea2455fd1e8a9",
-  "TransparentUpgradeableProxy keccak256": "0x92579f452fe663595a898cbac85d80bb3868a6c9f034f19ba7fbebdfa3b65a4d"
+  "TransparentUpgradeableProxy keccak256": "0x92579f452fe663595a898cbac85d80bb3868a6c9f034f19ba7fbebdfa3b65a4d",
+  "HomeBridgeErcToNative keccak256": "0xb5a198416e6936a3443e718e53c675bf07621769bebb57b8c61389e740678f30"
 }
