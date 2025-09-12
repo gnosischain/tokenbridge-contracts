@@ -172,6 +172,7 @@ Transitional contracts during migration
 | XDaiForeignBridge(Implementation Contract) | Ethereum     | `0x257bDD093Cab1Bd39eBF837dCB60f33d031d7d49` |
 | HomeBridgeErcToNative Implementation       | Gnosis Chain | `0xe6998b0C03D3cb9ee8C04f266e573c7Fa8782846` |
 | USDSDepositContract.sol                    | Gnosis Chain | `0x5C183C8A49aBA6e31049997a56D75600E27FF8c9` |
+| Erc20ToNativeBridgeHelper.sol              | Gnosis Chain | `0xe30269bc61E677cD60aD163a221e464B7022fbf5` |
 
 # Interacting with the contracts
 
