@@ -23,7 +23,7 @@ Target audiences:
 - [Dev](#dev)
 - [Contracts overview](#contracts)
 - [Interact with contracts](#interact-with-the-contracts)
-- [Call to Action: Update your code](#call-to-action-update-your-code)
+- [Call to Action: Update your code](#call-to-action-update-your-code--indexer)
 - [Test with post migration environment](#how-to-test-with-post-migration-environment)
 
 ## General overview
@@ -524,7 +524,7 @@ graph TD
 4. `xDAIForeignBridge.relayTokens(address recipient, uint256 amount)`  
    -> relay USDS from Ethereum, receive xDAI on GC
 5. `xDAIForeignBridge.executeSignatures(bytes memory message, bytes memory signatures)`  
-   -> claim DAI / swap USDS->DAI on Ethereum
+   -> claim USDS / swap USDS->DAI on Ethereum
 
 ### Function Callflow
 
