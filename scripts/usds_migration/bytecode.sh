@@ -7,6 +7,7 @@
 # XDaiBridgePeripheralForDaiPreUsdsUpgrade
 # XDaiBridgePeripheralForUsdsPreUsdsUpgrade
 # HomeBridgeErcToNative
+# USDS Deposit Contract
 
 
 
@@ -22,6 +23,7 @@ XDaiBridgePeripheralForDaiPreUsdsUpgrade_json="out/XDaiBridgePeripheralForDaiPre
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json="out/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.sol/XDaiBridgePeripheralForUsdsPreUsdsUpgrade.json"
 TransparentUpgradeableProxy_json="out/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json"
 HomeBridgeErcToNative_json="out/HomeBridgeErcToNative.sol/HomeBridgeErcToNative.json"
+USDSDepositContract_json="out/USDSDepositContract.sol/USDSDepositContract.json"
 
 # Extract deployed bytecode
 XDaiBridge_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiForeignBridge_json")
@@ -31,6 +33,7 @@ XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.obj
 XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode=$(jq -r '.deployedBytecode.object' "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_json")
 TransparentUpgradeableProxy_bytecode=$(jq -r '.deployedBytecode.object' "$TransparentUpgradeableProxy_json")
 HomeBridgeErcToNative_bytecode=$(jq -r '.deployedBytecode.object' "$HomeBridgeErcToNative_json")
+USDSDepositContract_bytecode=$(jq -r '.deployedBytecode.object' "$USDSDepositContract_json")
 
 cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
 {
@@ -40,7 +43,8 @@ cat <<EOF > scripts/usds_migration/deployBytecode_usds_migration.json
   "XDaiBridgePeripheralForDaiPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForDaiPreUsdsUpgrade_bytecode",
   "XDaiBridgePeripheralForUsdsPreUsdsUpgrade deployedBytecode": "$XDaiBridgePeripheralForUsdsPreUsdsUpgrade_bytecode"
   "TransparentUpgradeableProxy deployedBytecode": "$TransparentUpgradeableProxy_bytecode",
-  "HomeErcToNative deployedBytecode": "$HomeBridgeErcToNative_bytecode"
+  "HomeErcToNative deployedBytecode": "$HomeBridgeErcToNative_bytecode",
+  "USDSDepositContract deployedBytecode": "$USDSDepositContract_bytecode"
 }
 EOF
 
