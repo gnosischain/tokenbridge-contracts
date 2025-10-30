@@ -13,7 +13,7 @@ Target audiences:
 
 1. 3rd party applications: please refer to [Call To Action](#call-to-action-update-your-code).
 2. User: No action required.
-3. Bridge validator: update the validator image to latest version(WIP).
+3. Bridge validator: update the validator image to [v3.10.0](https://hub.docker.com/layers/gnosischain/tokenbridge-oracle/v3.10.0/images/sha256-f135fbec56c3755d40ebf68257bfab4258c80242566ed157a49e1e5cfc692c91).
 
 \*refer to Omega audit XDFB1.
 
@@ -25,6 +25,7 @@ Target audiences:
 - [Interact with contracts](#interact-with-the-contracts)
 - [Call to Action: Update your code](#call-to-action-update-your-code--indexer)
 - [Test with post migration environment](#how-to-test-with-post-migration-environment)
+- [Note for Bridge governors](#note-for-bridge-governors)
 
 ## General overview
 
@@ -428,13 +429,13 @@ gnosisChainBridgeOwner= `0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd`
 
 Caller: BridgeRouterOwner `0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6` (same as the bridge owner)
 
-ROUTER_ADDRESS=`0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0`
+ROUTER_PROXY_ADDRESS=`0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0`
 ProxyAdminContract=`0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd`
 XDAI_BRIDGE_PERIPHERAL=`0x3b6669727927b934753B018EB421a84Ed4eb0a43`
 XDAI_FOREIGNBRIDGE_PROXY=`0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016`
 
 ```solidity
-proxyAdminContract.upgradeAndCall(ROUTER_ADDRESS,newImplementation, "");
+proxyAdminContract.upgradeAndCall(ROUTER_PROXY_ADDRESS,newImplementation, "");
 router.setRoute(address(DAI), address(xDAIBridgeperipheral));
 router.setRoute(address(USDS), xDAIForeignBridgeProxy);
 ```
@@ -655,6 +656,16 @@ sequenceDiagram
 
      - Approve only the exact amount of USDS you intend to relay, rather than leaving a large allowance.
 
+### Note on BridgeRouter.sol
+
+BridgeRouter.sol uses TransparentUpgradeableProxy from Openzeppelin as proxy.
+
+1. TransparentUpgradeableProxy.sol is deployed from [Openzeppelin/openzeppelin-contract@acd4ff7](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/acd4ff74de833399287ed6b31b4debf6b2b35527) v5.2.0. Audited in [2024-10-v5.1.pdf](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/audits/2024-10-v5.1.pdf)
+
+2. ProxyAdmibn.sol is deployed from [Openzeppelin/openzeppelin-contract@acd4ff7](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/acd4ff74de833399287ed6b31b4debf6b2b35527) v5.2.0. Audited in [2023-10-v5.0.pdf](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/audits/2023-10-v5.0.pdf)
+
+To verify deployed bytecode, checkout [this repository](https://github.com/zengzengzenghuy/USDS-migration-xDAIBridge-contract-verification)
+
 # Call to Action: Update your code & indexer
 
 To modify your existing smart contract code to work with the xDAI bridge after USDS migration, complete the following changes:
@@ -737,3 +748,40 @@ To simulate the actual mainnet environment, we use [Tenderly Virtual TestNets](h
 2. Gnosis Chain: https://virtual.gnosis.eu.rpc.tenderly.co/4c9e4122-6c01-46bd-a44a-e08133d2d2cc
 
    - Explorer: https://dashboard.tenderly.co/explorer/vnet/4c9e4122-6c01-46bd-a44a-e08133d2d2cc
+
+# Note for bridge governors
+
+For call traces, state changes, emitted event, touched contracts, please check:
+
+1. Tenderly Simulation on Ethereum: https://dashboard.tenderly.co/public/safe/safe-apps/simulator/7a369788-8c38-4ace-b7ed-1f25981e8bee
+2. Tenderly Simulation on Gnosis Chain: https://dashboard.tenderly.co/public/safe/safe-apps/simulator/3940609f-bcf2-4428-9432-11a4c98ccd73
+
+**Core contract in the upgrade**
+
+1. XDaiForeignBridge.sol: `0x257bDD093Cab1Bd39eBF837dCB60f33d031d7d49`
+2. HomeBridgeErcToNative.sol: `0xe6998b0C03D3cb9ee8C04f266e573c7Fa8782846`
+3. USDSDepositContract.sol: `0x5C183C8A49aBA6e31049997a56D75600E27FF8c9`
+
+**Peripheral contract in the upgrade**
+
+1. BridgeRouter.sol: `0x74899961224538E423eFfD1A0Ff3346adf3F4C56`
+2. TransparentUpgradeableProxy.sol: `0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0`
+3. ProxyAdmin.sol: `0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd`
+4. XDaiBridgePeripheral.sol: `0x3b6669727927b934753B018EB421a84Ed4eb0a43`
+
+**Contract & parameters mentioned in the upgrade transaction**
+
+1. `0x257bDD093Cab1Bd39eBF837dCB60f33d031d7d49`(Ethereum): XDaiForeignBridge new implementation
+2. `0xe6998b0C03D3cb9ee8C04f266e573c7Fa8782846`(Ethereum): HomeBridgeErcToNative new implementation
+3. `0x5C183C8A49aBA6e31049997a56D75600E27FF8c9`(Gnosis Chain): USDSDepositContract
+4. `0x74899961224538E423eFfD1A0Ff3346adf3F4C56`(Ethereum): BridgeRouter new implementaiton
+5. `0x9a873656c19Efecbfb4f9FAb5B7acdeAb466a0B0`(Ethereum): TransparentUpgradeableProxy for BridgeRouter
+6. `0xD7e65A32bEd4ce8cc57Ec188F2bBb8016dc4b1cd`(Ethereum): ProxyAdmin.sol for BridgeRouter, controls upgrade for the implementation contract w.r.t Proxy address
+7. `0x3b6669727927b934753B018EB421a84Ed4eb0a43`(Ethereum): XDaiBridgePeripheral, swap DAI->USDS for user before bridging
+8. `0x4aa42145aa6ebf72e164c9bbc74fbd3788045016`(Ethereum): XDaiForeignBridgeProxy
+9. `0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6`(GnosisChain): HomeBridgErcToNativeProxy
+10. `0x670daeaF0F1a5e336090504C68179670B5059088`(GnosisChain): InterestReceiver contract when `payInterest` is called. Related to sDAI yield when sDAI adapter `claim` function is [called](https://gnosisscan.io/address/0x670daeaf0f1a5e336090504c68179670b5059088#tokentxns)
+11. `0x6B175474E89094C44Da98b954EedeAC495271d0F`(Ethereum): DAI token address
+12. `0xdC035D45d973E3EC169d2276DDab16f1e407384F`(Ethereum): USDS token address
+13. `minCashThreshold`: is the minimum USDS that the bridge need to hold for user to claim USDS back. It acts as a buffer and the minCashThreshold amount is not used for investing. Value: `1000000000000000000000000`. (Same as [`minCashThreshold(DAI)`](:https://etherscan.io/address/0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016#readProxyContract#F14))
+14. `minInterestPaid`: The minimum amount of interest from sUSDS that can be withdrawn during a payInterest call. The payInterest call will be invalid if the available interest < minInterestedPaid. Value: `1000000000000000000000`. (Same as [`minInterestedPaid(DAI)`](https://etherscan.io/address/0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016#readProxyContract#F11))
