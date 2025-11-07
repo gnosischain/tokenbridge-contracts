@@ -158,8 +158,8 @@ Transitional contracts during migration
 
 > > Original audit reports from the previous design.
 
-1. [Omega](./docs/audits/xdai-bridge-usds-upgrade-omega.pdf)
-2. Gnosis Ltd [1](./docs/audits/xdai-bridge-usds-upgrade-gnosis.pdf),[2](./docs/audits/xdai-bridge-usds-upgrade-gnosis-final.pdf)
+1. [Omega](https://github.com/OmegaAudits/audits/blob/main/202510-Gnosis-Bridge-USDS-Upgrade.pdf)
+2. Gnosis Ltd [1](./docs/audits/xdai-bridge-usds-upgrade-gnosis.pdf),[2](https://github.com/cducrest/audit-reports/blob/main/bridge-USDS-upgrade3.pdf)
 
 ### Contract addresses
 
