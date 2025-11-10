@@ -785,3 +785,18 @@ For call traces, state changes, emitted event, touched contracts, please check:
 12. `0xdC035D45d973E3EC169d2276DDab16f1e407384F`(Ethereum): USDS token address
 13. `minCashThreshold`: is the minimum USDS that the bridge need to hold for user to claim USDS back. It acts as a buffer and the minCashThreshold amount is not used for investing. Value: `1000000000000000000000000`. (Same as [`minCashThreshold(DAI)`](:https://etherscan.io/address/0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016#readProxyContract#F14))
 14. `minInterestPaid`: The minimum amount of interest from sUSDS that can be withdrawn during a payInterest call. The payInterest call will be invalid if the available interest < minInterestedPaid. Value: `1000000000000000000000`. (Same as [`minInterestedPaid(DAI)`](https://etherscan.io/address/0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016#readProxyContract#F11))
+
+**Technical Analysis**
+
+We have requested Omega team to audit and verify the Safe transaction payload of the upgrade txs on both Ethereum and Gnosis Chain. The upgrade txs are consistent with the description on both this technical documentation and the governance forum.
+
+Upgrade tx on Ethereum: [url](https://app.safe.global/transactions/tx?safe=eth:0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6&id=multisig_0x42F38ec5A75acCEc50054671233dfAC9C0E7A3F6_0x7309151c47d50ea0bac9eac0b28a13b8c2904857d7ddd6c65653336d9b53acc0)  
+Upgrade tx on Gnosis Chain: [url](https://app.safe.global/transactions/tx?safe=gno:0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd&id=multisig_0x7a48Dac683DA91e4faa5aB13D91AB5fd170875bd_0xb6d709f3f6fe73958bf4de18a2d8ba81b8981a18e0c17c9f608e61c03ec0e166)
+
+Omega validations
+
+- [x] The deployed bytecode of the deployed contracts match the deployed bytecode of the contracts audited by Omega.
+- [x] The parameters and state changes of the transactions match the intented upgrade behaviors
+- [x] The signatures in Bridge governors Safe correspond with the SafeTxHash and signatures of the Safe.
+
+Both transactions are executed on Nov 7 2025.
