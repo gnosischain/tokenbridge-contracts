@@ -15,14 +15,12 @@ import "./BasicTokenBridge.sol";
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;
 
-    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce);
+    event UserRequestForSignature(address recipient, uint256 value, bytes32 nonce, address token);
     event AffirmationCompleted(address recipient, uint256 value, bytes32 nonce);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event SignedForAffirmation(address indexed signer, bytes32 nonce);
     event CollectedSignatures(
-        address authorityResponsibleForRelay,
-        bytes32 messageHash,
-        uint256 NumberOfCollectedSignatures
+        address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures
     );
 
     /**
@@ -116,12 +114,14 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         }
     }
 
-    function _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(address _receiver, uint256 _amount)
-        internal
-    {
+    function _emitUserRequestForSignatureIncreaseNonceAndMaybeSendDataWithHashi(
+        address _receiver,
+        uint256 _amount,
+        address _token
+    ) internal {
         uint256 currentNonce = nonce();
         setNonce(currentNonce + 1);
-        emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce));
+        emit UserRequestForSignature(_receiver, _amount, bytes32(currentNonce), _token);
         _maybeSendDataWithHashi(abi.encodePacked(_receiver, _amount, bytes32(currentNonce)));
     }
 
@@ -180,11 +180,11 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     function markAsProcessed(uint256 _v) internal pure returns (uint256) {
-        return _v | (2**255);
+        return _v | (2 ** 255);
     }
 
     function isAlreadyProcessed(uint256 _number) public pure returns (bool) {
-        return _number & (2**255) == 2**255;
+        return _number & (2 ** 255) == 2 ** 255;
     }
 
     function numMessagesSigned(bytes32 _message) public view returns (uint256) {

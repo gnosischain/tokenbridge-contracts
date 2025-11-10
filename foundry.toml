@@ -4,20 +4,22 @@ test = 'test/foundry'
 script = 'script'
 out = 'out'
 libs = ['lib']
-remappings = []
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "openzeppelin-solidity/=node_modules/openzeppelin-solidity"
+    ]
 optimizer = true
-optimizer-runs = 10_000
+optimizer-runs = 10
+auto_detect_solc = true
+fs_permissions = [{ access = "read", path = "./out"}, { access = "read-write", path = "./test/foundry"}]
+
+compilation_restrictions = [
+    { paths = "contracts/upgradeable_contracts/erc20_to_native/{BridgeRouter,XDaiBridgePeripheral,XDaiBridgePeripheralForDaiPreUsdsUpgrade,XDaiBridgePeripheralForUsdsPreUsdsUpgrade}.sol", version = "=0.8.25" },
+    { paths = "contracts/upgradeability/TransparentUpgradeableProxy.sol", version = "=0.8.25" },
+]
 
 
-[rpc_endpoints]
-mainnet = "${RPC_MAINNET}"
-gnosis = "${RPC_GNOSIS}"
-
-[etherscan]
-mainnet={key="${ETHERSCAN_API_KEY_MAINNET}",chainId=1}
-gnosis={key="${ETHERSCAN_API_KEY_GNOSIS}",chainId=100}
-chiado={key="${ETHERSCAN_API_KEY_GNOSIS}",chainId=10200}
-goerli={key="${ETHERSCAN_API_KEY_MAINNET}",chainId=5}
 
 [fuzz]
 runs=2000

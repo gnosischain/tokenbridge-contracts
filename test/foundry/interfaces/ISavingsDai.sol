@@ -48,4 +48,3 @@ interface ISavingsDai {
     function version() external view returns (string memory);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 }
-

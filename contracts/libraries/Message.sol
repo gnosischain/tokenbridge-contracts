@@ -1,4 +1,5 @@
 pragma solidity 0.4.24;
+
 import "../interfaces/IBridgeValidators.sol";
 
 library Message {
@@ -16,6 +17,7 @@ library Message {
     // offset 52: 32 bytes :: uint256 - value
     // offset 84: 32 bytes :: bytes32 - transaction hash
     // offset 116: 20 bytes :: address - contract address to prevent double spending
+    // offset 136: 20 bytes :: address - token address
 
     // mload always reads 32 bytes.
     // so we can and have to start reading recipient at offset 20 instead of 32.
@@ -29,33 +31,26 @@ library Message {
     function parseMessage(bytes message)
         internal
         pure
-        returns (address recipient, uint256 amount, bytes32 nonce, address contractAddress)
+        returns (address recipient, uint256 amount, bytes32 nonce, address contractAddress, address tokenAddress)
     {
         require(isMessageValid(message));
+
         assembly {
             recipient := mload(add(message, 20))
             amount := mload(add(message, 52))
             nonce := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
+            tokenAddress := mload(add(message, 124))
+        }
+
+        if (message.length == 104) {
+            tokenAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI address
         }
     }
 
-    // layout of message :: bytes:
-    // offset  0: 32 bytes :: uint256 - message length
-    // offset 32: 20 bytes :: address - recipient address
-    // offset 52: 32 bytes :: uint256 - value
-    // offset 84: 32 bytes :: bytes32 - nonce
-    function parseHashiMessage(bytes message) internal pure returns (address recipient, uint256 amount, bytes32 nonce) {
-        require(message.length == 84);
-        assembly {
-            recipient := mload(add(message, 20))
-            amount := mload(add(message, 52))
-            nonce := mload(add(message, 84))
-        }
-    }
-
+    ///@dev original message length is 104. Message with 124 has appended token address.
     function isMessageValid(bytes _msg) internal pure returns (bool) {
-        return _msg.length == 104;
+        return _msg.length == 104 || _msg.length == 124; 
     }
 
     function recoverAddressFromSignedMessage(bytes signature, bytes message, bool isAMBMessage)
@@ -63,6 +58,8 @@ library Message {
         pure
         returns (address)
     {
+
+        require(isMessageValid(message));
         require(signature.length == 65);
         bytes32 r;
         bytes32 s;
@@ -84,24 +81,31 @@ library Message {
         if (isAMBMessage) {
             return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
         } else {
-            string memory msgLength = "104";
+            string memory msgLength;
+            if (message.length == 104) {
+                msgLength = "104";
+            }else if(message.length == 124){
+                msgLength = "124";
+            }else{
+                revert();
+            }
             return keccak256(abi.encodePacked(prefix, msgLength, message));
         }
     }
 
     /**
-    * @dev Validates provided signatures, only first requiredSignatures() number
-    * of signatures are going to be validated, these signatures should be from different validators.
-    * @param _message bytes message used to generate signatures
-    * @param _signatures bytes blob with signatures to be validated.
-    * First byte X is a number of signatures in a blob,
-    * next X bytes are v components of signatures,
-    * next 32 * X bytes are r components of signatures,
-    * next 32 * X bytes are s components of signatures.
-    * @param _validatorContract contract, which conforms to the IBridgeValidators interface,
-    * where info about current validators and required signatures is stored.
-    * @param isAMBMessage true if _message is an AMB message with arbitrary length.
-    */
+     * @dev Validates provided signatures, only first requiredSignatures() number
+     * of signatures are going to be validated, these signatures should be from different validators.
+     * @param _message bytes message used to generate signatures
+     * @param _signatures bytes blob with signatures to be validated.
+     * First byte X is a number of signatures in a blob,
+     * next X bytes are v components of signatures,
+     * next 32 * X bytes are r components of signatures,
+     * next 32 * X bytes are s components of signatures.
+     * @param _validatorContract contract, which conforms to the IBridgeValidators interface,
+     * where info about current validators and required signatures is stored.
+     * @param isAMBMessage true if _message is an AMB message with arbitrary length.
+     */
     function hasEnoughValidSignatures(
         bytes _message,
         bytes _signatures,

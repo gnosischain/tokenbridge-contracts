@@ -43,6 +43,7 @@ interface IXDaiForeignBridge {
         uint256 _minInterestPaid,
         address _interestReceiver
     ) external;
+    function swapSDAIToUSDS() external;
     function interestAmount(address _token) external view returns (uint256);
     function interestReceiver(address _token) external view returns (address);
     function invest(address _token) external;
@@ -85,5 +86,6 @@ interface IXDaiForeignBridge {
     function withinExecutionLimit(uint256 _amount) external view returns (bool);
     function withinLimit(uint256 _amount) external view returns (bool);
     function setNewErc20Token(address newDAI) external;
+    function recoverLegacyTransfer(address _to, uint256 amount) external;
+    function nonce() external view returns (uint256);
 }
-

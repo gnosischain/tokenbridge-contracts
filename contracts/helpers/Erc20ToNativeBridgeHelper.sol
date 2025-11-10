@@ -40,6 +40,11 @@ contract Erc20ToNativeBridgeHelper is Helper {
         return result;
     }
 
+    function getMessageHash(address _recipient, uint256 _value, bytes32 _nonce, address _token) external view returns (bytes32) {
+        bytes32 result = keccak256(abi.encodePacked(_recipient, _value, _nonce, foreignBridge, _token));
+        return result;
+    }
+
     function getSignatures(bytes32 _msgHash) external view returns (bytes memory) {
         uint256 signed = bridge.numMessagesSigned(_msgHash);
 

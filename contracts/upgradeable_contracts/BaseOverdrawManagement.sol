@@ -60,5 +60,5 @@ contract BaseOverdrawManagement is EternalStorage {
     }
 
     /* solcov ignore next */
-    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock) external;
+    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock, address tokenAddress) external;
 }

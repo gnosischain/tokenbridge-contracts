@@ -5,8 +5,8 @@ on: [push]
 env:
   PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
   TENDERLY_FORK: ${{ secrets.TENDERLY_FORK }}
-  RPC_MAINNET: ${{ vars.RPC_MAINNET }}
-  RPC_GNOSIS: ${{ vars.RPC_GNOSIS }}
+  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+  RPC_GNOSIS: ${{ secrets.RPC_GNOSIS }}
   ETHERSCAN_API_KEY_MAINNET: ${{ vars.ETHERSCAN_API_KEY_MAINNET }}
   ETHERSCAN_API_KEY_GNOSIS: ${{ vars.ETHERSCAN_API_KEY_GNOSIS }}
   VERIFIER_URL: ${{ vars.VERIFIER_URL }}
@@ -23,17 +23,19 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Yarn install
-        run: yarn
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '10.18'
+
+      - name: npm install
+        run: npm install
 
       - name: Install Foundry Dependencies
-        run: forge install
+        run: forge install && forge build
 
-      - id: deployment
-        name: Deploy to Tenderly Fork
-        run: |
-          DEPLOYED_TO=$(jq -r '.deployedTo' <<< $(forge create --rpc-url "https://${{ secrets.TENDERLY_FORK }}" --private-key ${{ secrets.PRIVATE_KEY }} --json --optimize XDaiForeignBridge))
-          echo "NEW_IMPLEMENTATION=$DEPLOYED_TO" >> "$GITHUB_ENV"
+      - name: Run fork test on fork
+        run: ./test/foundry/fork-test.sh
 
-      - name: Run test on fork
-        run: forge test --fork-url "https://${{ secrets.TENDERLY_FORK }}" -vvv
+      - name: Run end to end test test on fork
+        run: ./test/foundry/e2e/e2e-test.sh
