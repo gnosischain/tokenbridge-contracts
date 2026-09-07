@@ -23,6 +23,9 @@ contract InterestReceiverStakeBuyback is InterestReceiverBase {
         path[2] = address(stakeToken);
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
+        // Do not swap without a configured slippage bound (minReceivedFraction defaults to 0).
+        require(minReceivedFraction > 0, "slippage bound not set");
+
         // (min received %) * (amount / 1 DAI) * (STAKE per 1 DAI)
         uint256 minAmount = (minReceivedFraction * amount * uniswapRouterV2.getAmountsOut(1 ether, path)[2]) / 10**36;
 
