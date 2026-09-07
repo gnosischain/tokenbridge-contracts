@@ -19,6 +19,9 @@ contract InterestReceiverSwapToETH is InterestReceiverBase {
         path[1] = wethToken;
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
+        // Do not swap without a configured slippage bound (minReceivedFraction defaults to 0).
+        require(minReceivedFraction > 0, "slippage bound not set");
+
         // (min received %) * (amount / 1 DAI) * (ETH per 1 DAI)
         uint256 minAmount = (minReceivedFraction * amount * uniswapRouterV2.getAmountsOut(1 ether, path)[1]) / 10**36;
 
